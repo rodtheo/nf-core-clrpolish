@@ -54,10 +54,11 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoft
 include { MERYL_COUNT as MERYL_COUNT_READS_01;
           MERYL_COUNT as MERYL_COUNT_GENOME_01  } from '../modules/nf-core/meryl/count/main'
 include { CAT_FASTQ } from '../modules/nf-core/cat/fastq/main'
-include { MERYL_HISTOGRAM as MERYL_HISTOGRAM_PRE;
-          MERYL_HISTOGRAM as MERYL_HISTOGRAM_GENOME_01 } from '../modules/nf-core/meryl/histogram/main'
+include { MERYL_HISTOGRAM as MERYL_HISTOGRAM_READS_PRE;
+          MERYL_HISTOGRAM as MERYL_HISTOGRAM_GENOME_PRE } from '../modules/nf-core/meryl/histogram/main'
 
 include { MERQURY as MERQURY_PRE } from '../modules/nf-core/merqury/main'
+include { GENOMESCOPE2 as GENOMESCOPE2_PRE } from '../modules/nf-core/genomescope2/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -144,16 +145,26 @@ workflow CLRPOLISH {
         genome_ch
     )
 
-    MERYL_HISTOGRAM_PRE (
-        MERYL_COUNT_READS_01.out.meryl_db.mix(MERYL_COUNT_GENOME_01.out.meryl_db)
+    MERYL_HISTOGRAM_READS_PRE (
+        // MERYL_COUNT_READS_01.out.meryl_db.mix(MERYL_COUNT_GENOME_01.out.meryl_db)
+        MERYL_COUNT_READS_01.out.meryl_db
     )
+
+    MERYL_HISTOGRAM_GENOME_PRE (
+        MERYL_COUNT_GENOME_01.out.meryl_db
+    )
+
     MERYL_COUNT_READS_01.out.meryl_db.combine(genome_path_ch).first().view()
 
     MERQURY_PRE (
         MERYL_COUNT_READS_01.out.meryl_db.combine(genome_path_ch).first()
     )
 
+    GENOMESCOPE2_PRE (
+        MERYL_HISTOGRAM_GENOME_PRE.out.hist
+    )
 
+    
 
 
 }
