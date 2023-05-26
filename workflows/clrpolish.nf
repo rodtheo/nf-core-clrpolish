@@ -51,7 +51,13 @@ include { INPUT_CHECK } from '../subworkflows/local/input_check'
 include { FASTQC                      } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
+include { MERYL_COUNT as MERYL_COUNT_READS_01;
+          MERYL_COUNT as MERYL_COUNT_GENOME_01  } from '../modules/nf-core/meryl/count/main'
+include { CAT_FASTQ } from '../modules/nf-core/cat/fastq/main'
+include { MERYL_HISTOGRAM as MERYL_HISTOGRAM_PRE;
+          MERYL_HISTOGRAM as MERYL_HISTOGRAM_GENOME_01 } from '../modules/nf-core/meryl/histogram/main'
 
+include { MERQURY as MERQURY_PRE } from '../modules/nf-core/merqury/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -71,7 +77,12 @@ workflow CLRPOLISH {
     INPUT_CHECK (
         ch_input
     )
+
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
+
+    reads_ch = INPUT_CHECK.out.reads
+    genome_path_ch = Channel.fromPath("$params.genome")
+    
 
     //
     // MODULE: Run FastQC
@@ -100,6 +111,9 @@ workflow CLRPOLISH {
     ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
     ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
 
+    // println("A partir daqui")
+    // ch_multiqc_files.view()
+
     MULTIQC (
         ch_multiqc_files.collect(),
         ch_multiqc_config.toList(),
@@ -107,6 +121,41 @@ workflow CLRPOLISH {
         ch_multiqc_logo.toList()
     )
     multiqc_report = MULTIQC.out.report.toList()
+
+    // Create a channel where paired-end data is mentioned as single-end
+    // This is necessary in order to concatenate paired-end in a single file by cat/fastq nf-core module
+    reads_ch_single = reads_ch.map { it -> [['id': it[0]['id'], 'single_end': true], it[1]] }
+            
+
+    CAT_FASTQ (
+        reads_ch_single
+    )
+
+    MERYL_COUNT_READS_01 (
+        CAT_FASTQ.out.reads
+    )
+
+    // Prepare genome channel to count kmers with meryl
+    ch_genome_description = Channel.of(['id': 'genome', 'single_end': true])
+    genome_ch = ch_genome_description.concat( genome_path_ch ).toList()
+    genome_ch.view()
+
+    MERYL_COUNT_GENOME_01 (
+        genome_ch
+    )
+
+    MERYL_HISTOGRAM_PRE (
+        MERYL_COUNT_READS_01.out.meryl_db.mix(MERYL_COUNT_GENOME_01.out.meryl_db)
+    )
+    MERYL_COUNT_READS_01.out.meryl_db.combine(genome_path_ch).first().view()
+
+    MERQURY_PRE (
+        MERYL_COUNT_READS_01.out.meryl_db.combine(genome_path_ch).first()
+    )
+
+
+
+
 }
 
 /*
