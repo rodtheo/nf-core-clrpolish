@@ -33,6 +33,15 @@
 > If you are new to Nextflow and nf-core, please refer to [this page](https://nf-co.re/docs/usage/installation) on how
 > to set-up Nextflow. Make sure to [test your setup](https://nf-co.re/docs/usage/introduction#how-to-run-a-pipeline)
 > with `-profile test` before running the workflow on actual data.
+A sample dataset can be downloaded from [this link](https://drive.google.com/file/d/1D-ZocRLvek_HC5fhXggceSfxG_fzXifu/view?usp=sharing). Please unpack it and execute the pipeline as:
+
+```bash
+nextflow run nf-core/clrpolish \
+   -profile docker,test \
+   --input data/samplesheet_test.csv \
+   --outdir meus_resultados_bs \
+   --fasta data/genomes/bsubtilis_pb.fasta
+```
 
 <!-- TODO nf-core: Describe the minimum required steps to execute the pipeline, e.g. how to prepare samplesheets.
      Explain what rows and columns represent. For instance (please edit as appropriate):
