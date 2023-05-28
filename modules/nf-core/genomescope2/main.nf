@@ -17,6 +17,7 @@ process GENOMESCOPE2 {
     tuple val(meta), path("*_transformed_log_plot.png")   , emit: transformed_log_plot_png
     tuple val(meta), path("*_model.txt")                  , emit: model
     tuple val(meta), path("*_summary.txt")                , emit: summary
+    tuple val(meta), path("lookup_table.txt")             , emit: lookup_table
     path "versions.yml"                                   , emit: versions
 
     when:
@@ -28,6 +29,7 @@ process GENOMESCOPE2 {
     """
     genomescope2 \\
         --input $histogram \\
+        --fitted_hist \\
         $args \\
         --output . \\
         --name_prefix $prefix

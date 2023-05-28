@@ -59,6 +59,10 @@ include { MERYL_HISTOGRAM as MERYL_HISTOGRAM_READS_PRE;
 
 include { MERQURY as MERQURY_PRE } from '../modules/nf-core/merqury/main'
 include { GENOMESCOPE2 as GENOMESCOPE2_PRE } from '../modules/nf-core/genomescope2/main'
+include { MERFIN_COMPLETENESS } from '../modules/local/merfin_completeness'
+include { MERFIN_HIST } from '../modules/local/merfin_hist'
+include { BWA_MEM } from '../modules/nf-core/bwa/mem/main'
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -67,6 +71,25 @@ include { GENOMESCOPE2 as GENOMESCOPE2_PRE } from '../modules/nf-core/genomescop
 
 // Info required for completion email and summary
 def multiqc_report = []
+
+process GET_PEAK {
+    input:
+    tuple val(meta), path(genomescope2model)
+
+    output:
+    path("*_peak.txt"), emit: peak
+// cat ${genomescope2model} | grep "^kmercov" | python -c 'import sys; print(float([x.split() for x in sys.stdin.readlines()][0][1]))' > file
+
+    // peak="\$(cat ${genomescope2model} | grep "^kmercov" | python -c 'import sys; print(float([x.split() for x in sys.stdin.readlines()][0][1]))')"
+    when:
+    task.ext.when == null || task.ext.when
+
+    script:
+    prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    cat ${genomescope2model} | grep "^kmercov" | python -c 'import sys; print(float([x.split() for x in sys.stdin.readlines()][0][1]))' > ${prefix}_peak.txt
+    """
+}
 
 workflow CLRPOLISH {
 
@@ -161,7 +184,28 @@ workflow CLRPOLISH {
     )
 
     GENOMESCOPE2_PRE (
-        MERYL_HISTOGRAM_GENOME_PRE.out.hist
+        MERYL_HISTOGRAM_READS_PRE.out.hist
+    )
+
+    peak_out = GET_PEAK (
+        GENOMESCOPE2_PRE.out.model
+    )
+
+    peak_ch_val = peak_out.map{ it.text.trim() }.first()
+    peak_ch_val.view()
+
+    MERFIN_COMPLETENESS (
+        MERYL_COUNT_GENOME_01.out.meryl_db,
+        MERYL_COUNT_READS_01.out.meryl_db,
+        GENOMESCOPE2_PRE.out.lookup_table,
+        peak_ch_val
+    )
+
+    MERFIN_HIST (
+        genome_ch,
+        MERYL_COUNT_READS_01.out.meryl_db,
+        GENOMESCOPE2_PRE.out.lookup_table,
+        peak_ch_val
     )
 
     
