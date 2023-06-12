@@ -172,9 +172,9 @@ workflow CLRPOLISH {
         INPUT_CHECK.out.reads
     )
 
-    CUSTOM_DUMPSOFTWAREVERSIONS (
-        ch_versions.unique().collectFile(name: 'collated_versions.yml')
-    )
+    // CUSTOM_DUMPSOFTWAREVERSIONS (
+    //     ch_versions.unique().collectFile(name: 'collated_versions.yml')
+    // )
 
     // Create a channel where paired-end data is mentioned as single-end
     // This is necessary in order to concatenate paired-end in a single file by cat/fastq nf-core module
@@ -202,7 +202,7 @@ workflow CLRPOLISH {
         // MERYL_COUNT_READS_01.out.meryl_db.mix(MERYL_COUNT_GENOME_01.out.meryl_db)
         MERYL_COUNT_READS_01.out.meryl_db
     )
-
+    // TO-DO: Check validity of having the following task
     MERYL_HISTOGRAM_GENOME_PRE (
         MERYL_COUNT_GENOME_01.out.meryl_db
     )
@@ -260,10 +260,10 @@ workflow CLRPOLISH {
     genome_ch_fai = genome_ch.map{ it[0] }.concat( genome_ch.map{ it[1]+".fai" } ).toList()
     genome_ch_fai.view()
     
-    SAMTOOLS_FAIDX (
-        genome_ch,
-        genome_ch_fai
-    )
+    // SAMTOOLS_FAIDX (
+    //     genome_ch,
+    //     genome_ch_fai
+    // )
 
     ch_bam = BWA_MEM.out.bam.join(SAMTOOLS_INDEX.out.bai)       // channel: [mandatory] [ val(meta), path(bam), path(bai) ]
     ch_bam.map { meta, bam, bai ->
@@ -283,30 +283,30 @@ workflow CLRPOLISH {
     //
     // MODULE: MultiQC
     //
-    workflow_summary    = WorkflowClrpolish.paramsSummaryMultiqc(workflow, summary_params)
-    ch_workflow_summary = Channel.value(workflow_summary)
+    // workflow_summary    = WorkflowClrpolish.paramsSummaryMultiqc(workflow, summary_params)
+    // ch_workflow_summary = Channel.value(workflow_summary)
 
-    methods_description    = WorkflowClrpolish.methodsDescriptionText(workflow, ch_multiqc_custom_methods_description)
-    ch_methods_description = Channel.value(methods_description)
+    // methods_description    = WorkflowClrpolish.methodsDescriptionText(workflow, ch_multiqc_custom_methods_description)
+    // ch_methods_description = Channel.value(methods_description)
 
-    ch_multiqc_files = Channel.empty()
-    ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
-    ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml'))
-    ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
-    ch_multiqc_files = ch_multiqc_files.mix(MOSDEPTH.out.global_txt.collect{it[1]}.ifEmpty([]))
-    ch_multiqc_files = ch_multiqc_files.mix(PICARD_COLLECTWGSMETRICS.out.metrics.collect{it[1]}.ifEmpty([]))
+    // ch_multiqc_files = Channel.empty()
+    // ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
+    // ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml'))
+    // // ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
+    // ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
+    // ch_multiqc_files = ch_multiqc_files.mix(MOSDEPTH.out.global_txt.collect{it[1]}.ifEmpty([]))
+    // ch_multiqc_files = ch_multiqc_files.mix(PICARD_COLLECTWGSMETRICS.out.metrics.collect{it[1]}.ifEmpty([]))
 
-    // println("A partir daqui")
-    // ch_multiqc_files.view()
+    // // println("A partir daqui")
+    // // ch_multiqc_files.view()
 
-    MULTIQC (
-        ch_multiqc_files.collect(),
-        ch_multiqc_config.toList(),
-        ch_multiqc_custom_config.toList(),
-        ch_multiqc_logo.toList()
-    )
-    multiqc_report = MULTIQC.out.report.toList()
+    // MULTIQC (
+    //     ch_multiqc_files.collect(),
+    //     ch_multiqc_config.toList(),
+    //     ch_multiqc_custom_config.toList(),
+    //     ch_multiqc_logo.toList()
+    // )
+    // multiqc_report = MULTIQC.out.report.toList()
 
     // MODULE: VariantCalling
         
@@ -373,12 +373,12 @@ workflow CLRPOLISH {
         BCFTOOLS_SORT.out.vcf
     )
 
-    uniqvcf_ch = BCFTOOLS_SORT.out.vcf.concat(BCFTOOLS_INDEX_CONCAT.out.tbi)
+    uniqvcf_ch = BCFTOOLS_SORT.out.vcf.join(BCFTOOLS_INDEX_CONCAT.out.tbi)
     uniqvcf_ch.view{ "UNIQ: " + it}
 
-    // VCFLIB_VCFUNIQ (
-    //     BCFTOOLS_CONCAT.out.vcf.concat(BCFTOOLS_INDEX_CONCAT.out.tbi)
-    // )
+    VCFLIB_VCFUNIQ (
+        uniqvcf_ch
+    )
 
     // FREEBAYES_FASTAGENERATEREGIONS.out.bed.view()
 
@@ -395,13 +395,13 @@ workflow CLRPOLISH {
 
     // HERE
 
-    // MERFIN_POLISH (
-    //     genome_ch,
-    //     MERYL_COUNT_READS_01.out.meryl_db,
-    //     GENOMESCOPE2_PRE.out.lookup_table,
-    //     peak_ch_val,
-    //     FREEBAYES.out.vcf 
-    // )
+    MERFIN_POLISH (
+        genome_ch,
+        MERYL_COUNT_READS_01.out.meryl_db,
+        GENOMESCOPE2_PRE.out.lookup_table,
+        peak_ch_val,
+        VCFLIB_VCFUNIQ.out.vcf 
+    )
 
     // BCFTOOLS_INDEX_POLISHED (
     //     MERFIN_POLISH.out.vcf
