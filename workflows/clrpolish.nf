@@ -62,7 +62,8 @@ include { MERYL_HISTOGRAM as MERYL_HISTOGRAM_READS_PRE;
 include { MERQURY as MERQURY_PRE } from '../modules/nf-core/merqury/main'
 include { GENOMESCOPE2 as GENOMESCOPE2_PRE } from '../modules/nf-core/genomescope2/main'
 include { MERFIN_COMPLETENESS } from '../modules/local/merfin_completeness'
-include { MERFIN_HIST } from '../modules/local/merfin_hist'
+include { MERFIN_HIST as MERFIN_HIST_EVALUATE_POLISH;
+          MERFIN_HIST as MERFIN_HIST_EVALUATE_PRIMARY_ASSEMBLY } from '../modules/local/merfin_hist'
 include { BWA_MEM } from '../modules/nf-core/bwa/mem/main'
 include { BWA_INDEX } from '../modules/nf-core/bwa/index/main'
 include { SAMTOOLS_INDEX } from '../modules/nf-core/samtools/index/main'
@@ -81,6 +82,8 @@ include { FREEBAYES_FASTAGENERATEREGIONS } from '../modules/local/freebayes/fast
 include { BCFTOOLS_CONCAT } from '../modules/nf-core/bcftools/concat/main'
 include { VCFLIB_VCFUNIQ } from '../modules/nf-core/vcflib/vcfuniq/main'
 include { BCFTOOLS_SORT } from '../modules/nf-core/bcftools/sort/main'
+include { TABIX_BGZIP as TABIX_BGZIP_VCF_POLISHED } from '../modules/nf-core/tabix/bgzip/main'
+include { BCFTOOLS_CONSENSUS } from '../modules/nf-core/bcftools/consensus/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -107,6 +110,21 @@ process GET_PEAK {
     prefix = task.ext.prefix ?: "${meta.id}"
     """
     cat ${genomescope2model} | grep "^kmercov" | python -c 'import sys; print(float([x.split() for x in sys.stdin.readlines()][0][1]))' > ${prefix}_peak.txt
+    """
+}
+
+process SUBSET_VCF {
+  input:
+    tuple val(meta), path(vcf_in)
+  output:
+    tuple val(meta), path("*_filtered.vcf.gz"), emit: vcf_out
+  script:
+    """
+    #!/bin/bash
+
+    zcat $vcf_in | head -n 500 > result_filtered.vcf
+    bgzip -c result_filtered.vcf > result_filtered.vcf.gz
+    tabix -p vcf result_filtered.vcf.gz
     """
 }
 
@@ -231,7 +249,7 @@ workflow CLRPOLISH {
         peak_ch_val
     )
 
-    MERFIN_HIST (
+    MERFIN_HIST_EVALUATE_PRIMARY_ASSEMBLY (
         genome_ch,
         MERYL_COUNT_READS_01.out.meryl_db,
         GENOMESCOPE2_PRE.out.lookup_table,
@@ -380,41 +398,60 @@ workflow CLRPOLISH {
         uniqvcf_ch
     )
 
-    // FREEBAYES_FASTAGENERATEREGIONS.out.bed.view()
+    
+    if (params.config_profile_name == 'Test profile') {
 
-    // BCFTOOLS_INDEX_BEFORE (
-    //     FREEBAYES.out.vcf
-    // )
+        // SUBSET_VCF (
+        //     VCFLIB_VCFUNIQ.out.vcf
+        // )
 
-    // BCFTOOLS_VIEW_FILTER (
-    //     FREEBAYES.out.vcf,
-    //     BCFTOOLS_INDEX.out.tbi,
-    //     [],
-    //     [],
-    // )
-
-    // HERE
+        // vcf_to_polish_ch = SUBSET_VCF.out.vcf_out
+        vcf_to_polish_ch = VCFLIB_VCFUNIQ.out.vcf
+    } else {
+        vcf_to_polish_ch = VCFLIB_VCFUNIQ.out.vcf 
+    }
 
     MERFIN_POLISH (
-        genome_ch,
-        MERYL_COUNT_READS_01.out.meryl_db,
-        GENOMESCOPE2_PRE.out.lookup_table,
-        peak_ch_val,
-        VCFLIB_VCFUNIQ.out.vcf 
+            genome_ch,
+            MERYL_COUNT_READS_01.out.meryl_db,
+            GENOMESCOPE2_PRE.out.lookup_table,
+            peak_ch_val,
+            vcf_to_polish_ch
+        )
+
+    TABIX_BGZIP_VCF_POLISHED (
+        MERFIN_POLISH.out.vcf
     )
 
-    // BCFTOOLS_INDEX_POLISHED (
-    //     MERFIN_POLISH.out.vcf
-    // )
+     BCFTOOLS_INDEX_POLISHED (
+        TABIX_BGZIP_VCF_POLISHED.out.output
+    )
+
+    // TO DO: Check validity of using this task
+    BCFTOOLS_VIEW_COMPRESS (
+        MERFIN_POLISH.out.vcf.join(BCFTOOLS_INDEX_POLISHED.out.tbi),
+        [],
+        [],
+        [],
+    )
+
+    consensus_fasta_ch = TABIX_BGZIP_VCF_POLISHED.out.output.join(BCFTOOLS_INDEX_POLISHED.out.tbi).join(genome_ch)
+    consensus_fasta_ch = consensus_fasta_ch.map {[ ['id': 'round_1_'+it[0]['id'], 'single_end': true ], it[1], it[2], it[3] ]}
+    consensus_fasta_ch.view { "CONSENSUS: " + it }
+
+    BCFTOOLS_CONSENSUS (
+        consensus_fasta_ch
+    )
+    
 
 
-    // BCFTOOLS_VIEW_COMPRESS (
-    //     MERFIN_POLISH.out.vcf.join(BCFTOOLS_INDEX_POLISHED.out.tbi),
-    //     [],
-    //     [],
-    //     [],
-    // )
-
+    MERFIN_HIST_EVALUATE_POLISH (
+        BCFTOOLS_CONSENSUS.out.fasta,
+        MERYL_COUNT_READS_01.out.meryl_db,
+        GENOMESCOPE2_PRE.out.lookup_table,
+        peak_ch_val
+    )
+    
     // TO HERE
 
 
