@@ -40,6 +40,9 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
 include { INPUT_CHECK } from '../subworkflows/local/input_check'
+include { FASTA_POLISH_DNA as FASTA_POLISH_DNA_ROUND_1;
+FASTA_POLISH_DNA as FASTA_POLISH_DNA_ROUND_2;
+FASTA_POLISH_DNA as FASTA_POLISH_DNA_ROUND_3 } from '../subworkflows/local/fasta_polish_dna'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -114,6 +117,11 @@ process GET_PEAK {
 }
 
 process SUBSET_VCF {
+    conda "bioconda::tabix=1.11"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/tabix:1.11--hdfd78af_0' :
+        'biocontainers/tabix:1.11--hdfd78af_0' }"
+
   input:
     tuple val(meta), path(vcf_in)
   output:
@@ -122,7 +130,7 @@ process SUBSET_VCF {
     """
     #!/bin/bash
 
-    zcat $vcf_in | head -n 500 > result_filtered.vcf
+    zcat $vcf_in | head -n 10000 > result_filtered.vcf
     bgzip -c result_filtered.vcf > result_filtered.vcf.gz
     tabix -p vcf result_filtered.vcf.gz
     """
@@ -210,7 +218,7 @@ workflow CLRPOLISH {
     // Prepare genome channel to count kmers with meryl
     ch_genome_description = Channel.of(['id': 'genome', 'single_end': true])
     genome_ch = ch_genome_description.concat( genome_path_ch ).toList()
-    genome_ch.view()
+    // genome_ch.view()
 
     MERYL_COUNT_GENOME_01 (
         genome_ch
@@ -225,7 +233,7 @@ workflow CLRPOLISH {
         MERYL_COUNT_GENOME_01.out.meryl_db
     )
 
-    MERYL_COUNT_READS_01.out.meryl_db.combine(genome_path_ch).first().view()
+    // MERYL_COUNT_READS_01.out.meryl_db.combine(genome_path_ch).first().view()
 
     MERQURY_PRE (
         MERYL_COUNT_READS_01.out.meryl_db.combine(genome_path_ch).first()
@@ -240,7 +248,7 @@ workflow CLRPOLISH {
     )
 
     peak_ch_val = peak_out.map{ it.text.trim() }.first()
-    peak_ch_val.view()
+    // peak_ch_val.view()
 
     MERFIN_COMPLETENESS (
         MERYL_COUNT_GENOME_01.out.meryl_db,
@@ -259,199 +267,251 @@ workflow CLRPOLISH {
     // 
     // MODULE: ILLUMINA READ MAPPING
     // 
-    genome_index_ch = BWA_INDEX (
-        genome_ch
-    )
-
-    
-    BWA_MEM (
-        TRIMMOMATIC.out.trimmed_reads,
-        genome_index_ch.index,
-        true
-    )
-
-    SAMTOOLS_INDEX (
-        BWA_MEM.out.bam
-    )
-
-
-    genome_ch_fai = genome_ch.map{ it[0] }.concat( genome_ch.map{ it[1]+".fai" } ).toList()
-    genome_ch_fai.view()
-    
-    // SAMTOOLS_FAIDX (
-    //     genome_ch,
-    //     genome_ch_fai
+    // genome_index_ch = BWA_INDEX (
+    //     genome_ch
     // )
 
-    ch_bam = BWA_MEM.out.bam.join(SAMTOOLS_INDEX.out.bai)       // channel: [mandatory] [ val(meta), path(bam), path(bai) ]
-    ch_bam.map { meta, bam, bai ->
-                        return [meta, bam, bai, []]
-            }
-            .set { ch_mosdepth_in }
+    
+    // BWA_MEM (
+    //     TRIMMOMATIC.out.trimmed_reads,
+    //     genome_index_ch.index,
+    //     true
+    // )
 
-    MOSDEPTH ( ch_mosdepth_in, [[:],[]])
-    PICARD_COLLECTWGSMETRICS ( BWA_MEM.out.bam
-                                        .join(SAMTOOLS_INDEX.out.bai),
-				genome_ch,
-				genome_ch_fai,
-				[]
-			)
+    // SAMTOOLS_INDEX (
+    //     BWA_MEM.out.bam
+    // )
+
+
+    // genome_ch_fai = genome_ch.map{ it[0] }.concat( genome_ch.map{ it[1]+".fai" } ).toList()
+    // genome_ch_fai.view()
+    
+    // // SAMTOOLS_FAIDX (
+    // //     genome_ch,
+    // //     genome_ch_fai
+    // // )
+
+    // ch_bam = BWA_MEM.out.bam.join(SAMTOOLS_INDEX.out.bai)       // channel: [mandatory] [ val(meta), path(bam), path(bai) ]
+    // ch_bam.map { meta, bam, bai ->
+    //                     return [meta, bam, bai, []]
+    //         }
+    //         .set { ch_mosdepth_in }
+
+    // MOSDEPTH ( ch_mosdepth_in, [[:],[]])
+    // PICARD_COLLECTWGSMETRICS ( BWA_MEM.out.bam
+    //                                     .join(SAMTOOLS_INDEX.out.bai),
+	// 			genome_ch,
+	// 			genome_ch_fai,
+	// 			[]
+	// 		)
 
     
-    //
-    // MODULE: MultiQC
-    //
-    // workflow_summary    = WorkflowClrpolish.paramsSummaryMultiqc(workflow, summary_params)
-    // ch_workflow_summary = Channel.value(workflow_summary)
+    // //
+    // // MODULE: MultiQC
+    // //
+    // // workflow_summary    = WorkflowClrpolish.paramsSummaryMultiqc(workflow, summary_params)
+    // // ch_workflow_summary = Channel.value(workflow_summary)
 
-    // methods_description    = WorkflowClrpolish.methodsDescriptionText(workflow, ch_multiqc_custom_methods_description)
-    // ch_methods_description = Channel.value(methods_description)
+    // // methods_description    = WorkflowClrpolish.methodsDescriptionText(workflow, ch_multiqc_custom_methods_description)
+    // // ch_methods_description = Channel.value(methods_description)
 
-    // ch_multiqc_files = Channel.empty()
-    // ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
-    // ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml'))
-    // // ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-    // ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
-    // ch_multiqc_files = ch_multiqc_files.mix(MOSDEPTH.out.global_txt.collect{it[1]}.ifEmpty([]))
-    // ch_multiqc_files = ch_multiqc_files.mix(PICARD_COLLECTWGSMETRICS.out.metrics.collect{it[1]}.ifEmpty([]))
+    // // ch_multiqc_files = Channel.empty()
+    // // ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
+    // // ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml'))
+    // // // ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
+    // // ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
+    // // ch_multiqc_files = ch_multiqc_files.mix(MOSDEPTH.out.global_txt.collect{it[1]}.ifEmpty([]))
+    // // ch_multiqc_files = ch_multiqc_files.mix(PICARD_COLLECTWGSMETRICS.out.metrics.collect{it[1]}.ifEmpty([]))
 
-    // // println("A partir daqui")
-    // // ch_multiqc_files.view()
+    // // // println("A partir daqui")
+    // // // ch_multiqc_files.view()
 
-    // MULTIQC (
-    //     ch_multiqc_files.collect(),
-    //     ch_multiqc_config.toList(),
-    //     ch_multiqc_custom_config.toList(),
-    //     ch_multiqc_logo.toList()
-    // )
-    // multiqc_report = MULTIQC.out.report.toList()
+    // // MULTIQC (
+    // //     ch_multiqc_files.collect(),
+    // //     ch_multiqc_config.toList(),
+    // //     ch_multiqc_custom_config.toList(),
+    // //     ch_multiqc_logo.toList()
+    // // )
+    // // multiqc_report = MULTIQC.out.report.toList()
 
-    // MODULE: VariantCalling
+    // // MODULE: VariantCalling
         
-    genome_ch_fai_file = genome_ch_fai.map { it[1] }
+    // genome_ch_fai_file = genome_ch_fai.map { it[1] }
 
-    freebayes_chr = Channel.value("bsubtilis1 bsubtilis2")
+    // freebayes_chr = Channel.value("bsubtilis1 bsubtilis2")
 
-    FREEBAYES_FASTAGENERATEREGIONS (
-        genome_ch_fai,
-        freebayes_chr
-    )
+    // FREEBAYES_FASTAGENERATEREGIONS (
+    //     genome_ch_fai,
+    //     freebayes_chr
+    // )
 
-    freebayes_input_ch = BWA_MEM.out.bam.flatten().concat(SAMTOOLS_INDEX.out.bai.map { it[1] }).toList()
+    // freebayes_input_ch = BWA_MEM.out.bam.flatten().concat(SAMTOOLS_INDEX.out.bai.map { it[1] }).toList()
 
-    freebayes_input_ch_el = freebayes_input_ch.map( { [it] } )
-    // freebayes_input_ch_el = Channel.of(1, 2)
-    freebayes_input_ch_el.view{ "Freebayes: " + it }
-    freebayes_beds = FREEBAYES_FASTAGENERATEREGIONS.out.bed.map { it[1] }
-    freebayes_input_lists = freebayes_input_ch_el.combine(freebayes_beds.flatten())
-    freebayes_input_lists_ok = freebayes_input_lists.map{ [ [ 'id': it[0][0]['id']+'_'+it[1].name.split('\\.')[1]+'_'+it[1].name.split('\\.')[3], 'single_end': false ],
-                                 it[0][1], it[0][2], [], [], it[1]] }
-    freebayes_input_lists_ok.view{ "LISTS: " + it }
-    freebayes_input_lists_ok.count().view()                          
+    // freebayes_input_ch_el = freebayes_input_ch.map( { [it] } )
+    // // freebayes_input_ch_el = Channel.of(1, 2)
+    // freebayes_input_ch_el.view{ "Freebayes: " + it }
+    // freebayes_beds = FREEBAYES_FASTAGENERATEREGIONS.out.bed.map { it[1] }
+    // freebayes_input_lists = freebayes_input_ch_el.combine(freebayes_beds.flatten())
+    // freebayes_input_lists_ok = freebayes_input_lists.map{ [ [ 'id': it[0][0]['id']+'_'+it[1].name.split('\\.')[1]+'_'+it[1].name.split('\\.')[3], 'single_end': false ],
+    //                              it[0][1], it[0][2], [], [], it[1]] }
+    // freebayes_input_lists_ok.view{ "LISTS: " + it }
+    // freebayes_input_lists_ok.count().view()                          
 
-    FREEBAYES (
-        freebayes_input_lists_ok,
-        genome_path_ch.first(),
-        genome_ch_fai_file.first(),
-        [],
-        [],
-        []
-    )
+    // FREEBAYES (
+    //     freebayes_input_lists_ok,
+    //     genome_path_ch.first(),
+    //     genome_ch_fai_file.first(),
+    //     [],
+    //     [],
+    //     []
+    // )
 
-    BCFTOOLS_INDEX_BEFORE (
-        FREEBAYES.out.vcf
-    )
+    // BCFTOOLS_INDEX_BEFORE (
+    //     FREEBAYES.out.vcf
+    // )
 
-    out_vcfs = FREEBAYES.out.vcf.map{ it[1] }.collect()
-    out_vcfs_tbis = BCFTOOLS_INDEX_BEFORE.out.tbi.map{ it[1] }.collect()
+    // out_vcfs = FREEBAYES.out.vcf.map{ it[1] }.collect()
+    // out_vcfs_tbis = BCFTOOLS_INDEX_BEFORE.out.tbi.map{ it[1] }.collect()
 
-    // // out_vcfs.view {"AAAAH: " + it  }
+    // // // out_vcfs.view {"AAAAH: " + it  }
 
-    sample_name_ch = BWA_MEM.out.bam.map{ it[0] }
-    // // out_vcfs.map{ it[1] }.toList().view{ "AAAAH: " + it }
-    vcfs_ch_list = sample_name_ch.concat(out_vcfs).concat(out_vcfs_tbis).toList()
-    // vcfs_ch_list.view { "VCFS: " + it}
+    // sample_name_ch = BWA_MEM.out.bam.map{ it[0] }
+    // // // out_vcfs.map{ it[1] }.toList().view{ "AAAAH: " + it }
+    // vcfs_ch_list = sample_name_ch.concat(out_vcfs).concat(out_vcfs_tbis).toList()
+    // // vcfs_ch_list.view { "VCFS: " + it}
     
 
-    // BCFTOOLS_INDEX_BEFORE.out.tbi.view { "INDEX: " + it }
+    // // BCFTOOLS_INDEX_BEFORE.out.tbi.view { "INDEX: " + it }
 
-    // vcfs_ch_index_list = vcfs_ch_list.concat(BCFTOOLS_INDEX_BEFORE.out.tbi)
-    // vcfs_ch_index_list.view { "VCFS_TBI: " + it}
+    // // vcfs_ch_index_list = vcfs_ch_list.concat(BCFTOOLS_INDEX_BEFORE.out.tbi)
+    // // vcfs_ch_index_list.view { "VCFS_TBI: " + it}
     
 
-    BCFTOOLS_CONCAT (
-        vcfs_ch_list
-    )
+    // BCFTOOLS_CONCAT (
+    //     vcfs_ch_list
+    // )
 
-    BCFTOOLS_SORT (
-        BCFTOOLS_CONCAT.out.vcf
-    )
+    // BCFTOOLS_SORT (
+    //     BCFTOOLS_CONCAT.out.vcf
+    // )
 
-    BCFTOOLS_INDEX_CONCAT (
-        BCFTOOLS_SORT.out.vcf
-    )
+    // BCFTOOLS_INDEX_CONCAT (
+    //     BCFTOOLS_SORT.out.vcf
+    // )
 
-    uniqvcf_ch = BCFTOOLS_SORT.out.vcf.join(BCFTOOLS_INDEX_CONCAT.out.tbi)
-    uniqvcf_ch.view{ "UNIQ: " + it}
+    // uniqvcf_ch = BCFTOOLS_SORT.out.vcf.join(BCFTOOLS_INDEX_CONCAT.out.tbi)
+    // uniqvcf_ch.view{ "UNIQ: " + it}
 
-    VCFLIB_VCFUNIQ (
-        uniqvcf_ch
-    )
+    // VCFLIB_VCFUNIQ (
+    //     uniqvcf_ch
+    // )
 
     
-    if (params.config_profile_name == 'Test profile') {
+    // if (params.config_profile_name == 'Test profile') {
 
-        // SUBSET_VCF (
-        //     VCFLIB_VCFUNIQ.out.vcf
-        // )
+    //     SUBSET_VCF (
+    //         VCFLIB_VCFUNIQ.out.vcf
+    //     )
 
-        // vcf_to_polish_ch = SUBSET_VCF.out.vcf_out
-        vcf_to_polish_ch = VCFLIB_VCFUNIQ.out.vcf
-    } else {
-        vcf_to_polish_ch = VCFLIB_VCFUNIQ.out.vcf 
-    }
+    //     vcf_to_polish_ch = SUBSET_VCF.out.vcf_out
+    //     // vcf_to_polish_ch = VCFLIB_VCFUNIQ.out.vcf
+    // } else {
+    //     vcf_to_polish_ch = VCFLIB_VCFUNIQ.out.vcf 
+    // }
 
-    MERFIN_POLISH (
-            genome_ch,
-            MERYL_COUNT_READS_01.out.meryl_db,
-            GENOMESCOPE2_PRE.out.lookup_table,
-            peak_ch_val,
-            vcf_to_polish_ch
-        )
+    // MERFIN_POLISH (
+    //         genome_ch,
+    //         MERYL_COUNT_READS_01.out.meryl_db,
+    //         GENOMESCOPE2_PRE.out.lookup_table,
+    //         peak_ch_val,
+    //         vcf_to_polish_ch
+    //     )
 
-    TABIX_BGZIP_VCF_POLISHED (
-        MERFIN_POLISH.out.vcf
-    )
+    // TABIX_BGZIP_VCF_POLISHED (
+    //     MERFIN_POLISH.out.vcf
+    // )
 
-     BCFTOOLS_INDEX_POLISHED (
-        TABIX_BGZIP_VCF_POLISHED.out.output
-    )
+    //  BCFTOOLS_INDEX_POLISHED (
+    //     TABIX_BGZIP_VCF_POLISHED.out.output
+    // )
 
-    // TO DO: Check validity of using this task
-    BCFTOOLS_VIEW_COMPRESS (
-        MERFIN_POLISH.out.vcf.join(BCFTOOLS_INDEX_POLISHED.out.tbi),
-        [],
-        [],
-        [],
-    )
+    // // TO DO: Check validity of using this task
+    // BCFTOOLS_VIEW_COMPRESS (
+    //     MERFIN_POLISH.out.vcf.join(BCFTOOLS_INDEX_POLISHED.out.tbi),
+    //     [],
+    //     [],
+    //     [],
+    // )
 
-    consensus_fasta_ch = TABIX_BGZIP_VCF_POLISHED.out.output.join(BCFTOOLS_INDEX_POLISHED.out.tbi).join(genome_ch)
-    consensus_fasta_ch = consensus_fasta_ch.map {[ ['id': 'round_1_'+it[0]['id'], 'single_end': true ], it[1], it[2], it[3] ]}
-    consensus_fasta_ch.view { "CONSENSUS: " + it }
+    // consensus_fasta_ch = TABIX_BGZIP_VCF_POLISHED.out.output.join(BCFTOOLS_INDEX_POLISHED.out.tbi).join(genome_ch)
+    // consensus_fasta_ch = consensus_fasta_ch.map {[ ['id': 'round_1_'+it[0]['id'], 'single_end': true ], it[1], it[2], it[3] ]}
+    // consensus_fasta_ch.view { "CONSENSUS: " + it }
 
-    BCFTOOLS_CONSENSUS (
-        consensus_fasta_ch
-    )
+    // BCFTOOLS_CONSENSUS (
+    //     consensus_fasta_ch
+    // )
     
 
 
-    MERFIN_HIST_EVALUATE_POLISH (
-        BCFTOOLS_CONSENSUS.out.fasta,
-        MERYL_COUNT_READS_01.out.meryl_db,
-        GENOMESCOPE2_PRE.out.lookup_table,
-        peak_ch_val
-    )
+    // MERFIN_HIST_EVALUATE_POLISH (
+    //     BCFTOOLS_CONSENSUS.out.fasta,
+    //     MERYL_COUNT_READS_01.out.meryl_db,
+    //     GENOMESCOPE2_PRE.out.lookup_table,
+    //     peak_ch_val
+    // )
+
+    ch_iteration = Channel.of([1])
+
+    // FASTA_POLISH_DNA.recurse (ch_iteration,
+    //                   TRIMMOMATIC.out.trimmed_reads.first(),
+    //                   genome_ch.first(),
+    //                   MERYL_COUNT_READS_01.out.meryl_db.first(),
+    //                   GENOMESCOPE2_PRE.out.lookup_table.first(),
+    //                   peak_ch_val).times(1)
     
+    (ch_iteration_r01,
+    ch_reads, // channel: [ val(meta), [ TRIMMOMATIC.out.trimmed_reads ] ]
+    ch_genome_polished, // channel: [ val(meta), [ assembly ] ]
+    ch_read_meryl_db,            // MERYL_COUNT_READS_01.out.meryl_db,
+    ch_lookup_table,            // GENOMESCOPE2_PRE.out.lookup_table,
+    ch_peak_val,
+    ch_merfin_hist_r01) = FASTA_POLISH_DNA_ROUND_1 (ch_iteration.map{ [it[0] + 1] },
+                      TRIMMOMATIC.out.trimmed_reads.first(),
+                      genome_ch.first(),
+                      MERYL_COUNT_READS_01.out.meryl_db.first(),
+                      GENOMESCOPE2_PRE.out.lookup_table.first(),
+                      peak_ch_val)
+
+    (ch_iteration_r02,
+    ch_reads, // channel: [ val(meta), [ TRIMMOMATIC.out.trimmed_reads ] ]
+    ch_genome_polished, // channel: [ val(meta), [ assembly ] ]
+    ch_read_meryl_db,            // MERYL_COUNT_READS_01.out.meryl_db,
+    ch_lookup_table,            // GENOMESCOPE2_PRE.out.lookup_table,
+    ch_peak_val,
+    ch_merfin_hist_r02) = FASTA_POLISH_DNA_ROUND_2 (ch_iteration_r01.map{ [it[0] + 1] },
+                      TRIMMOMATIC.out.trimmed_reads.first(),
+                      ch_genome_polished,
+                      MERYL_COUNT_READS_01.out.meryl_db.first(),
+                      GENOMESCOPE2_PRE.out.lookup_table.first(),
+                      peak_ch_val)
+
+    (ch_iteration_r03,
+    ch_reads, // channel: [ val(meta), [ TRIMMOMATIC.out.trimmed_reads ] ]
+    ch_genome_polished, // channel: [ val(meta), [ assembly ] ]
+    ch_read_meryl_db,            // MERYL_COUNT_READS_01.out.meryl_db,
+    ch_lookup_table,            // GENOMESCOPE2_PRE.out.lookup_table,
+    ch_peak_val,
+    ch_merfin_hist_r03) = FASTA_POLISH_DNA_ROUND_3 (ch_iteration_r02.map{ [it[0] + 1] },
+                      TRIMMOMATIC.out.trimmed_reads.first(),
+                      ch_genome_polished,
+                      MERYL_COUNT_READS_01.out.meryl_db.first(),
+                      GENOMESCOPE2_PRE.out.lookup_table.first(),
+                      peak_ch_val)
+
+    ch_iteration.view{ 'CH_ITER: ' + it }
+
+
+
     // TO HERE
 
 
