@@ -23,6 +23,7 @@ if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input sample
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+nextflow.enable.dsl = 2
 nextflow.preview.recursion=true
 
 ch_multiqc_config          = Channel.fromPath("$projectDir/assets/multiqc_config.yml", checkIfExists: true)
@@ -126,6 +127,10 @@ process SUBSET_VCF {
     tuple val(meta), path(vcf_in)
   output:
     tuple val(meta), path("*_filtered.vcf.gz"), emit: vcf_out
+
+  when:
+    task.ext.when == null || task.ext.when
+
   script:
     """
     #!/bin/bash
@@ -189,10 +194,10 @@ workflow CLRPOLISH {
     //
     // MODULE: Run FastQC
     //
-    FASTQC (
-        INPUT_CHECK.out.reads
-    )
-    ch_versions = ch_versions.mix(FASTQC.out.versions.first())
+    // FASTQC (
+    //     INPUT_CHECK.out.reads
+    // )
+    // ch_versions = ch_versions.mix(FASTQC.out.versions.first())
 
     TRIMMOMATIC (
         INPUT_CHECK.out.reads
@@ -468,47 +473,56 @@ workflow CLRPOLISH {
     //                   MERYL_COUNT_READS_01.out.meryl_db.first(),
     //                   GENOMESCOPE2_PRE.out.lookup_table.first(),
     //                   peak_ch_val).times(1)
+    ch_reads = TRIMMOMATIC.out.trimmed_reads
+    ch_read_meryl_db = MERYL_COUNT_READS_01.out.meryl_db
+    ch_lookup_table = GENOMESCOPE2_PRE.out.lookup_table
+    genome_ch_brackets = genome_ch
     
-    (ch_iteration_r01,
-    ch_reads, // channel: [ val(meta), [ TRIMMOMATIC.out.trimmed_reads ] ]
-    ch_genome_polished, // channel: [ val(meta), [ assembly ] ]
-    ch_read_meryl_db,            // MERYL_COUNT_READS_01.out.meryl_db,
-    ch_lookup_table,            // GENOMESCOPE2_PRE.out.lookup_table,
-    ch_peak_val,
-    ch_merfin_hist_r01) = FASTA_POLISH_DNA_ROUND_1 (ch_iteration.map{ [it[0] + 1] },
-                      TRIMMOMATIC.out.trimmed_reads.first(),
-                      genome_ch.first(),
-                      MERYL_COUNT_READS_01.out.meryl_db.first(),
-                      GENOMESCOPE2_PRE.out.lookup_table.first(),
-                      peak_ch_val)
+    // (ch_iteration_,
+    // ch_reads_, // channel: [ val(meta), [ TRIMMOMATIC.out.trimmed_reads ] ]
+    // genome_ch_, // channel: [ val(meta), [ assembly ] ]
+    // ch_read_meryl_db_,            // MERYL_COUNT_READS_01.out.meryl_db,
+    // ch_lookup_table_,            // GENOMESCOPE2_PRE.out.lookup_table,
+    // ch_peak_val_) =
 
-    (ch_iteration_r02,
-    ch_reads, // channel: [ val(meta), [ TRIMMOMATIC.out.trimmed_reads ] ]
-    ch_genome_polished, // channel: [ val(meta), [ assembly ] ]
-    ch_read_meryl_db,            // MERYL_COUNT_READS_01.out.meryl_db,
-    ch_lookup_table,            // GENOMESCOPE2_PRE.out.lookup_table,
-    ch_peak_val,
-    ch_merfin_hist_r02) = FASTA_POLISH_DNA_ROUND_2 (ch_iteration_r01.map{ [it[0] + 1] },
-                      TRIMMOMATIC.out.trimmed_reads.first(),
-                      ch_genome_polished,
-                      MERYL_COUNT_READS_01.out.meryl_db.first(),
-                      GENOMESCOPE2_PRE.out.lookup_table.first(),
-                      peak_ch_val)
+    ch_out_iteration = ch_iteration.map{ [it] }.merge(ch_reads.map{ [it] }).merge(genome_ch_brackets.map{ [it] }).merge(ch_read_meryl_db.map{ [it] }).merge(ch_lookup_table.map{ [it] }).merge(peak_ch_val)
+    n_iter = 2
+    ch_out_iteration.view{ "UUUAI: "+it }
+    ch_out_iteration = FASTA_POLISH_DNA_ROUND_1.recurse (ch_out_iteration.collect()).times(3)
+    
+    
 
-    (ch_iteration_r03,
-    ch_reads, // channel: [ val(meta), [ TRIMMOMATIC.out.trimmed_reads ] ]
-    ch_genome_polished, // channel: [ val(meta), [ assembly ] ]
-    ch_read_meryl_db,            // MERYL_COUNT_READS_01.out.meryl_db,
-    ch_lookup_table,            // GENOMESCOPE2_PRE.out.lookup_table,
-    ch_peak_val,
-    ch_merfin_hist_r03) = FASTA_POLISH_DNA_ROUND_3 (ch_iteration_r02.map{ [it[0] + 1] },
-                      TRIMMOMATIC.out.trimmed_reads.first(),
-                      ch_genome_polished,
-                      MERYL_COUNT_READS_01.out.meryl_db.first(),
-                      GENOMESCOPE2_PRE.out.lookup_table.first(),
-                      peak_ch_val)
+    // (ch_iteration_r02,
+    // ch_reads, // channel: [ val(meta), [ TRIMMOMATIC.out.trimmed_reads ] ]
+    // ch_genome_polished, // channel: [ val(meta), [ assembly ] ]
+    // ch_read_meryl_db,            // MERYL_COUNT_READS_01.out.meryl_db,
+    // ch_lookup_table,            // GENOMESCOPE2_PRE.out.lookup_table,
+    // ch_peak_val,
+    // ch_merfin_hist_r02) =
+    // FASTA_POLISH_DNA_ROUND_1.recurse (ch_iteration.first(),
+    //                   ch_reads.first(),
+    //                   genome_ch_brackets.first(),
+    //                   ch_read_meryl_db.first(),
+    //                   ch_lookup_table.first(),
+    //                   peak_ch_val.first()).times(4)
 
-    ch_iteration.view{ 'CH_ITER: ' + it }
+    // (ch_iteration_r03,
+    // ch_reads, // channel: [ val(meta), [ TRIMMOMATIC.out.trimmed_reads ] ]
+    // ch_genome_polished, // channel: [ val(meta), [ assembly ] ]
+    // ch_read_meryl_db,            // MERYL_COUNT_READS_01.out.meryl_db,
+    // ch_lookup_table,            // GENOMESCOPE2_PRE.out.lookup_table,
+    // ch_peak_val,
+    // ch_merfin_hist_r03) = FASTA_POLISH_DNA_ROUND_3 (ch_iteration_r02.map{ [it[0] + 1] },
+    //                   TRIMMOMATIC.out.trimmed_reads.first(),
+    //                   ch_genome_polished,
+    //                   MERYL_COUNT_READS_01.out.meryl_db.first(),
+    //                   GENOMESCOPE2_PRE.out.lookup_table.first(),
+    //                   peak_ch_val)
+
+    // ch_iteration_.view{ 'CH_ITER: ' + it }
+    // genome_ch_.view{ 'GENOME_CH: ' + it}
+
+    // FASTA_POLISH_DNA_ROUND_1.out.
 
 
 

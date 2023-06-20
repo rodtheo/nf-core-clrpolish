@@ -65,7 +65,7 @@ process FREEBAYES_FASTAGENERATEREGIONS {
         --chromosomes $chroms \\
         --bed ${prefix} \\
         $ref_idx \\
-        $task.cpus
+        ${params.n_splits_per_chr}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
