@@ -26,17 +26,23 @@ include { TRIMMOMATIC } from '../../modules/nf-core/trimmomatic/main'
 include { MOSDEPTH } from '../../modules/nf-core/mosdepth/main'
 include { PICARD_COLLECTWGSMETRICS } from '../../modules/nf-core/picard/collectwgsmetrics/main'
 include { BCFTOOLS_VIEW as BCFTOOLS_VIEW_FILTER;
-          BCFTOOLS_VIEW as BCFTOOLS_VIEW_COMPRESS } from '../../modules/nf-core/bcftools/view/main'
+          BCFTOOLS_VIEW as BCFTOOLS_VIEW_COMPRESS;
+          BCFTOOLS_VIEW as BCFTOOLS_VIEW_COMPRESS_NORM } from '../../modules/nf-core/bcftools/view/main'
 include { BCFTOOLS_INDEX as BCFTOOLS_INDEX_BEFORE;
           BCFTOOLS_INDEX as BCFTOOLS_INDEX_POLISHED;
-          BCFTOOLS_INDEX as BCFTOOLS_INDEX_CONCAT } from '../../modules/nf-core/bcftools/index/main'
+          BCFTOOLS_INDEX as BCFTOOLS_INDEX_CONCAT;
+          BCFTOOLS_INDEX as BCFTOOLS_INDEX_NORM;
+          BCFTOOLS_INDEX as BCFTOOLS_INDEX_COMPRESS_NORM } from '../../modules/nf-core/bcftools/index/main'
 include { MERFIN_POLISH } from '../../modules/local/merfin_polish'
 include { FREEBAYES_FASTAGENERATEREGIONS } from '../../modules/local/freebayes/fastagenerateregions'
 include { BCFTOOLS_CONCAT } from '../../modules/nf-core/bcftools/concat/main'
 include { VCFLIB_VCFUNIQ } from '../../modules/nf-core/vcflib/vcfuniq/main'
 include { BCFTOOLS_SORT } from '../../modules/nf-core/bcftools/sort/main'
-include { TABIX_BGZIP as TABIX_BGZIP_VCF_POLISHED } from '../../modules/nf-core/tabix/bgzip/main'
+include { TABIX_BGZIP as TABIX_BGZIP_VCF_POLISHED;
+            TABIX_BGZIP as TABIX_BGZIP_VCF_NORM } from '../../modules/nf-core/tabix/bgzip/main'
 include { BCFTOOLS_CONSENSUS } from '../../modules/nf-core/bcftools/consensus/main'
+include { GET_COMPLETNESS_VAL } from '../../modules/local/merfin_get_qv_value'
+include { BCFTOOLS_NORM } from '../../modules/nf-core/bcftools/norm/main'
 
 process SUBSET_VCF {
     conda "bioconda::tabix=1.11"
@@ -125,12 +131,19 @@ workflow FASTA_POLISH_DNA {
 
     main:
 
+    ch_iteration = Channel.empty()
+    ch_genome = Channel.empty()
+    ch_qv_value = Channel.empty()
+    ch_completness = Channel.empty()
+
     ch_iteration = ch_tuple_interation.map{ it[0] }
     ch_reads = ch_tuple_interation.map{ it[1] }
     ch_genome = ch_tuple_interation.map{ it[2] }
     ch_read_meryl_db = ch_tuple_interation.map{ it[3] }
     ch_lookup_table = ch_tuple_interation.map{ it[4] }
     ch_peak_val = ch_tuple_interation.map{ it[5] }
+    ch_qv_value = ch_tuple_interation.map{ it[6] }
+    ch_completness = ch_tuple_interation.map{ it[8] }
 
     // ch_tuple_interation.view{ "ITERATION CH: " + it}
 
@@ -142,12 +155,15 @@ workflow FASTA_POLISH_DNA {
         ch_genome
     )
 
+    ch_genome.view{ "BWA MEM EXECUTADO AQUI: "+it }
     
     BWA_MEM (
         ch_reads,
         genome_index_ch.index,
         true
     )
+
+    genome_index_ch.index.view{ "BWA MEM OUTPUT AQUI: "+it }
 
     SAMTOOLS_INDEX (
         BWA_MEM.out.bam
@@ -193,24 +209,34 @@ workflow FASTA_POLISH_DNA {
     // freebayes_input_ch_el = Channel.of(1, 2)
     // freebayes_input_ch_el.view{ "freebayes_input_ch_el: " + it }
     freebayes_beds = FREEBAYES_FASTAGENERATEREGIONS.out.bed.map { it[1] }
-    freebayes_input_ch_el = ch_genome_meta.first().mix(freebayes_input_ch.map { [it[1], it[2]]}.first()).buffer(size: 2)
+    // freebayes_input_ch_el = ch_genome.first().mix(freebayes_input_ch.map { [it[1], it[2]]}.first()).buffer(size: 2)
+    // freebayes_input_ch_el = ch_genome.join(genome_ch_fai).mix(freebayes_input_ch.map { [it[1], it[2]]}.first()).buffer(size: 2)
+    freebayes_input_ch_el = ch_genome.join(genome_ch_fai).merge(freebayes_input_ch.map { [it[1], it[2]]})
     
+    freebayes_input_ch_el_fb = freebayes_input_ch_el.map{ [it[0][0], it[1][0], it[1][1]] }
     freebayes_input_lists = freebayes_input_ch_el.combine(freebayes_beds.flatten())
+    // freebayes_input_lists.join(ch_genome).join(genome_ch_fai).view{ "******* INPUT CH: "+it}
     // FREEBAYES_FASTAGENERATEREGIONS.out.bed.view{ "PQP: "+it }
-    // freebayes_input_lists.view()
+    freebayes_input_lists.filter{it -> { def name=it[0]['id']; it[5].name =~ /^$name/;} }.view{"XXXXXXXXXXXXXXXXXXX VIEW HERE:"+it}
     // freebayes_input_lists_ok = freebayes_input_lists.map{ [ [ 'id': it[0][0]['id']+'_'+it[1].name.split('\\.')[1]+'_'+it[1].name.split('\\.')[3], 'single_end': false ],
     //                              it[0][1], it[0][2], [], [], it[1]] }
     // freebayes_input_lists_ok = freebayes_input_lists.map{it[3]}.view {it.name.split('\\.')}
+    freebayes_input_lists = freebayes_input_lists.filter{it -> { def name=it[0]['id']; it[5].name =~ /^$name/;} }
     freebayes_input_lists_ok = freebayes_input_lists.map{ 
-        [ [ 'id': it[0]['id']+'_'+it[2].name.split('\\.')[1]+'_'+it[2].name.split('\\.')[3], 'single_end': false ],
-                                 it[1][0], it[1][1], [], [], it[2]] }
-    // freebayes_input_lists_ok.view{ "LISTS: " + it }
-    // freebayes_input_lists_ok.count().view()                          
+        [ [ 'id': it[0]['id']+'_'+it[5].name.split('\\.')[1]+'_'+it[5].name.split('\\.')[3], 'single_end': false ],
+                                 it[3], it[4], [], [], it[5], it[1], it[2]] }
+    freebayes_input_lists_ok.first().view{ "LISTS: " + it }
+    // freebayes_input_lists_ok.count().view()
+    ch_genome.view{ "=== ESSE EH O GENOMA: "+it }  
+    genome_ch_fai_file.collate(3, false).view{ "=== ESSE EH O GENOMA (FAI): "+it }
+
 
     FREEBAYES (
-        freebayes_input_lists_ok,
-        ch_genome.map { it[1] }.first(),
-        genome_ch_fai_file.first(),
+        freebayes_input_lists_ok.map{ [it[0], it[1], it[2], it[3], it[4], it[5]] },
+        freebayes_input_lists_ok.map{ it[6] },
+        freebayes_input_lists_ok.map{ it[7] },
+        // ch_genome.map { it[1] }.collate(1).first(),
+        // genome_ch_fai_file.collate(1).first(),
         [],
         [],
         []
@@ -275,7 +301,7 @@ workflow FASTA_POLISH_DNA {
     // BCFTOOLS_INDEX_BEFORE.out.tbi.view { "INDEX: " + it }
 
     // vcfs_ch_index_list = vcfs_ch_list.concat(BCFTOOLS_INDEX_BEFORE.out.tbi)
-    // vcfs_ch_index_list.view { "VCFS_TBI: " + it}
+    vcfs_ch_list.view { "VCFS_TBI: " + it}
     
 
     BCFTOOLS_CONCAT (
@@ -334,13 +360,43 @@ workflow FASTA_POLISH_DNA {
         [],
     )
 
+    ch_vcf_norm = TABIX_BGZIP_VCF_POLISHED.out.output.join(BCFTOOLS_INDEX_POLISHED.out.tbi)
+    
+    ch_vcf_norm.view{"VCF NORM: "+it}
+
+    BCFTOOLS_NORM (
+        ch_vcf_norm,
+        ch_genome
+    )
+
+    BCFTOOLS_NORM.out.vcf.view{"UUUUUUULA LA: "+it}
+
+     BCFTOOLS_INDEX_NORM (
+        BCFTOOLS_NORM.out.vcf
+    )
+
+    // TO DO: Check validity of using this task
+    BCFTOOLS_VIEW_COMPRESS_NORM (
+        BCFTOOLS_NORM.out.vcf.join(BCFTOOLS_INDEX_NORM.out.tbi),
+        [],
+        [],
+        [],
+    )
+
+    BCFTOOLS_INDEX_COMPRESS_NORM (
+        BCFTOOLS_VIEW_COMPRESS_NORM.out.vcf
+    )
+
     ch_n = ch_iteration.map { ['id': 'round_' + it[0], 'single_end': true] }
-    consensus_fasta_ch = TABIX_BGZIP_VCF_POLISHED.out.output.join(BCFTOOLS_INDEX_POLISHED.out.tbi).join(ch_genome)
-    // consensus_fasta_ch.view { "CONSENSUS A: " + it }
+    
+    consensus_fasta_ch = BCFTOOLS_VIEW_COMPRESS_NORM.out.vcf.join(BCFTOOLS_INDEX_COMPRESS_NORM.out.tbi).join(ch_genome)
+    
     consensus_fasta_ch = consensus_fasta_ch.map {[ ['id': it[0]['id'], 'single_end': true ], it[1], it[2], it[3] ]}
     
-    consensus_fasta_ch = ch_n.combine(consensus_fasta_ch)
-    // consensus_fasta_ch.view { "CONSENSUS B: " + it }
+    // consensus_fasta_ch = ch_n.combine(consensus_fasta_ch)
+    consensus_fasta_ch = ch_n.merge(consensus_fasta_ch)
+    consensus_fasta_ch.view { "CONSENSUS B: " + it }
+    consensus_fasta_ch.filter{ it[0] }.view { "CONSENSUS B: " + it }
     consensus_fasta_ch = consensus_fasta_ch.map{[ ['id': it[0]['id']+'_'+it[1]['id'], 'single_end': true], it[2], it[3], it[4] ]}
     // consensus_fasta_ch.view { "CONSENSUS C: " + it }
 
@@ -361,7 +417,7 @@ workflow FASTA_POLISH_DNA {
     // GET_QV_VALUE ( MERFIN_HIST_EVALUATE_POLISH.out.log ).view{"GET QV VALUE: " + it}
 
     MERYL_COUNT_GENOME (
-        ch_genome
+        ch_genome_polished
     )
 
     MERFIN_COMPLETENESS (
@@ -373,12 +429,16 @@ workflow FASTA_POLISH_DNA {
 
     ch_merfin_hist = MERFIN_HIST_EVALUATE_POLISH.out.log
     ch_merfin_hist.view{ "MERFIN HIST: "+it }
-    GET_QV_VALUE (ch_merfin_hist).view{ "QV VALUE: " + it }
+    ch_qv_value_polished = GET_QV_VALUE (ch_merfin_hist).view{ "QV VALUE: " + it }
+    ch_completness_polished = GET_COMPLETNESS_VAL(MERFIN_COMPLETENESS.out.completeness)
 
     // ch_out_iteration = ch_iteration.map{ [[it[0] + 1]] }.merge(ch_reads.map{ [it] }).merge(ch_genome_polished.map{ [it] }).merge(ch_read_meryl_db.map{ [it] }).merge(ch_lookup_table.map{ [it] }).merge(ch_peak_val.first()).map{ [it] }
-
+    ch_diff_qv_value = ch_qv_value_polished.toFloat().merge(ch_qv_value.toFloat()).map { it[0] - it[1] }.toFloat()
+    
+    
+    
     // ch_out_iteration_ = ch_iteration.map{ [[it[0] + 1]] }.first().concat(ch_reads.map{ [it] }.first()).concat(ch_genome_polished.map{ [it] }.first()).concat(ch_read_meryl_db.map{ [it] }.first()).concat(ch_lookup_table.map{ [it] }.first()).concat(ch_peak_val.first()).buffer(size: 6)
-    ch_out_iteration_ = ch_iteration.map{ [[it[0] + 1]] }.merge(ch_reads.map{ [it] }, ch_genome_polished.map{ [it] }, ch_read_meryl_db.map{ [it] }, ch_lookup_table.map{ [it] }, ch_peak_val)
+    ch_out_iteration_ = ch_iteration.map{ [[it[0] + 1]] }.merge(ch_reads.map{ [it] }, ch_genome_polished.map{ [it] }, ch_read_meryl_db.map{ [it] }, ch_lookup_table.map{ [it] }, ch_peak_val, ch_qv_value_polished, ch_diff_qv_value, ch_completness_polished)
     // ch_out_iteration_ = ch_out_iteration_.map{ [ it[0][0], it[1][0], it[2][0], it[3][0], it[4][0], it[5] ] }
 
     ch_out_iteration_.view { 'OUT INTERACTION: ' + it }

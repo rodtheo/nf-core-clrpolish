@@ -66,6 +66,9 @@ include { MERYL_HISTOGRAM as MERYL_HISTOGRAM_READS_PRE;
 include { MERQURY as MERQURY_PRE } from '../modules/nf-core/merqury/main'
 include { GENOMESCOPE2 as GENOMESCOPE2_PRE } from '../modules/nf-core/genomescope2/main'
 include { MERFIN_COMPLETENESS } from '../modules/local/merfin_completeness'
+include { GET_QV_VALUE } from '../modules/local/merfin_get_qv_value'
+include { GET_KMERS_VALS } from '../modules/local/merfin_get_qv_value'
+include { GET_COMPLETNESS_VAL } from '../modules/local/merfin_get_qv_value'
 include { MERFIN_HIST as MERFIN_HIST_EVALUATE_POLISH;
           MERFIN_HIST as MERFIN_HIST_EVALUATE_PRIMARY_ASSEMBLY } from '../modules/local/merfin_hist'
 include { BWA_MEM } from '../modules/nf-core/bwa/mem/main'
@@ -88,7 +91,8 @@ include { VCFLIB_VCFUNIQ } from '../modules/nf-core/vcflib/vcfuniq/main'
 include { BCFTOOLS_SORT } from '../modules/nf-core/bcftools/sort/main'
 include { TABIX_BGZIP as TABIX_BGZIP_VCF_POLISHED } from '../modules/nf-core/tabix/bgzip/main'
 include { BCFTOOLS_CONSENSUS } from '../modules/nf-core/bcftools/consensus/main'
-
+include { GATHER_RES_MULTIQC } from '../modules/local/gather_res_multiqc'
+include { MERYL_GREATER_THAN } from '../modules/local/meryl_greater'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -142,37 +146,7 @@ process SUBSET_VCF {
 }
 
 
-process tick {
-  input:
-    path 'input.txt'
-  output:
-    path 'result.txt'
-  script:
-    """
-    cat input.txt > result.txt
-    echo "Task ${task.index} : tick" >> result.txt
-    """
-}
 
-process tock {
-  input:
-    path 'input.txt'
-  output:
-    path 'result.txt'
-  script:
-    """
-    cat input.txt > result.txt
-    echo "Task ${task.index} : tock" >> result.txt
-    """
-}
-
-workflow clock {
-  take: infile
-  main:
-    infile | tick | tock
-  emit:
-    tock.out
-}
 
 workflow CLRPOLISH {
 
@@ -194,10 +168,10 @@ workflow CLRPOLISH {
     //
     // MODULE: Run FastQC
     //
-    // FASTQC (
-    //     INPUT_CHECK.out.reads
-    // )
-    // ch_versions = ch_versions.mix(FASTQC.out.versions.first())
+    FASTQC (
+        INPUT_CHECK.out.reads
+    )
+    ch_versions = ch_versions.mix(FASTQC.out.versions.first())
 
     TRIMMOMATIC (
         INPUT_CHECK.out.reads
@@ -220,6 +194,10 @@ workflow CLRPOLISH {
         CAT_FASTQ.out.reads
     )
 
+    MERYL_GREATER_THAN (
+        MERYL_COUNT_READS_01.out.meryl_db
+    )
+
     // Prepare genome channel to count kmers with meryl
     ch_genome_description = Channel.of(['id': 'genome', 'single_end': true])
     genome_ch = ch_genome_description.concat( genome_path_ch ).toList()
@@ -231,7 +209,7 @@ workflow CLRPOLISH {
 
     MERYL_HISTOGRAM_READS_PRE (
         // MERYL_COUNT_READS_01.out.meryl_db.mix(MERYL_COUNT_GENOME_01.out.meryl_db)
-        MERYL_COUNT_READS_01.out.meryl_db
+        MERYL_GREATER_THAN.out.meryl_db
     )
     // TO-DO: Check validity of having the following task
     MERYL_HISTOGRAM_GENOME_PRE (
@@ -241,7 +219,7 @@ workflow CLRPOLISH {
     // MERYL_COUNT_READS_01.out.meryl_db.combine(genome_path_ch).first().view()
 
     MERQURY_PRE (
-        MERYL_COUNT_READS_01.out.meryl_db.combine(genome_path_ch).first()
+        MERYL_GREATER_THAN.out.meryl_db.combine(genome_path_ch).first()
     )
 
     GENOMESCOPE2_PRE (
@@ -257,17 +235,19 @@ workflow CLRPOLISH {
 
     MERFIN_COMPLETENESS (
         MERYL_COUNT_GENOME_01.out.meryl_db,
-        MERYL_COUNT_READS_01.out.meryl_db,
+        MERYL_GREATER_THAN.out.meryl_db,
         GENOMESCOPE2_PRE.out.lookup_table,
         peak_ch_val
     )
 
     MERFIN_HIST_EVALUATE_PRIMARY_ASSEMBLY (
         genome_ch,
-        MERYL_COUNT_READS_01.out.meryl_db,
+        MERYL_GREATER_THAN.out.meryl_db,
         GENOMESCOPE2_PRE.out.lookup_table,
         peak_ch_val
     )
+
+    ch_qv_value = GET_QV_VALUE (MERFIN_HIST_EVALUATE_PRIMARY_ASSEMBLY.out.log).view{ "QV VALUE: " + it }
 
     // 
     // MODULE: ILLUMINA READ MAPPING
@@ -312,32 +292,24 @@ workflow CLRPOLISH {
 
     
     // //
-    // // MODULE: MultiQC
-    // //
-    // // workflow_summary    = WorkflowClrpolish.paramsSummaryMultiqc(workflow, summary_params)
-    // // ch_workflow_summary = Channel.value(workflow_summary)
+    // MODULE: MultiQC
+    //
+    workflow_summary    = WorkflowClrpolish.paramsSummaryMultiqc(workflow, summary_params)
+    ch_workflow_summary = Channel.value(workflow_summary)
 
-    // // methods_description    = WorkflowClrpolish.methodsDescriptionText(workflow, ch_multiqc_custom_methods_description)
-    // // ch_methods_description = Channel.value(methods_description)
+    methods_description    = WorkflowClrpolish.methodsDescriptionText(workflow, ch_multiqc_custom_methods_description)
+    ch_methods_description = Channel.value(methods_description)
 
-    // // ch_multiqc_files = Channel.empty()
-    // // ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
-    // // ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml'))
-    // // // ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-    // // ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
-    // // ch_multiqc_files = ch_multiqc_files.mix(MOSDEPTH.out.global_txt.collect{it[1]}.ifEmpty([]))
-    // // ch_multiqc_files = ch_multiqc_files.mix(PICARD_COLLECTWGSMETRICS.out.metrics.collect{it[1]}.ifEmpty([]))
+    ch_multiqc_files = Channel.empty()
+    ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
+    ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml'))
+    // ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
+    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
+    // ch_multiqc_files = ch_multiqc_files.mix(MOSDEPTH.out.global_txt.collect{it[1]}.ifEmpty([]))
+    // ch_multiqc_files = ch_multiqc_files.mix(PICARD_COLLECTWGSMETRICS.out.metrics.collect{it[1]}.ifEmpty([]))
 
-    // // // println("A partir daqui")
-    // // // ch_multiqc_files.view()
-
-    // // MULTIQC (
-    // //     ch_multiqc_files.collect(),
-    // //     ch_multiqc_config.toList(),
-    // //     ch_multiqc_custom_config.toList(),
-    // //     ch_multiqc_logo.toList()
-    // // )
-    // // multiqc_report = MULTIQC.out.report.toList()
+    // println("A partir daqui")
+    // ch_multiqc_files.view()
 
     // // MODULE: VariantCalling
         
@@ -474,7 +446,7 @@ workflow CLRPOLISH {
     //                   GENOMESCOPE2_PRE.out.lookup_table.first(),
     //                   peak_ch_val).times(1)
     ch_reads = TRIMMOMATIC.out.trimmed_reads
-    ch_read_meryl_db = MERYL_COUNT_READS_01.out.meryl_db
+    ch_read_meryl_db = MERYL_GREATER_THAN.out.meryl_db
     ch_lookup_table = GENOMESCOPE2_PRE.out.lookup_table
     genome_ch_brackets = genome_ch
     
@@ -485,10 +457,54 @@ workflow CLRPOLISH {
     // ch_lookup_table_,            // GENOMESCOPE2_PRE.out.lookup_table,
     // ch_peak_val_) =
 
-    ch_out_iteration = ch_iteration.map{ [it] }.merge(ch_reads.map{ [it] }).merge(genome_ch_brackets.map{ [it] }).merge(ch_read_meryl_db.map{ [it] }).merge(ch_lookup_table.map{ [it] }).merge(peak_ch_val)
-    n_iter = 2
+    ch_completness = GET_COMPLETNESS_VAL (MERFIN_COMPLETENESS.out.completeness).view{ "COMPLETENESS VALUE: " + it }
+
+    ch_out_iteration = ch_iteration.map{ [it] }.merge(ch_reads.map{ [it] }).merge(genome_ch_brackets.map{ [it] }).merge(ch_read_meryl_db.map{ [it] }).merge(ch_lookup_table.map{ [it] }).merge(peak_ch_val).merge(ch_qv_value).merge(Channel.of(1.0).toFloat()).merge(ch_completness)
+
+    ch_results = Channel.empty()
+    ch_results = ch_results.mix(ch_out_iteration.map{ [it] })
+
+
     ch_out_iteration.view{ "UUUAI: "+it }
-    ch_out_iteration = FASTA_POLISH_DNA_ROUND_1.recurse (ch_out_iteration.collect()).times(3)
+    // ch_out_iteration = FASTA_POLISH_DNA_ROUND_1.recurse (ch_out_iteration.collect()).times(3)
+    def run_fixed_iterations = params.n_iter ?: ''
+
+    if ( run_fixed_iterations != '' ) {
+        ch_out_iteration = FASTA_POLISH_DNA_ROUND_1.recurse (ch_out_iteration.collect()).times(run_fixed_iterations)
+    } else {
+        ch_out_iteration = FASTA_POLISH_DNA_ROUND_1.recurse (ch_out_iteration.collect()).until{ it[7].toFloat() > 0.0 }
+    }
+    
+    ch_results = ch_results.mix(ch_out_iteration.map{ [it] })
+
+    qv_res = ch_results.map{ [ ['"'+it[0][0][0]+'"', '"'+it[0][6]+'"', '"'+it[0][2][0]['id']+'"', '"'+it[0][8]+'"']] }.collect().view{ "FINAL: "+it }
+
+    GATHER_RES_MULTIQC (qv_res,
+    GENOMESCOPE2_PRE.out.linear_plot_png,
+      MERQURY_PRE.out.spectra_cn_fl_png, MERQURY_PRE.out.spectra_asm_fl_png)
+    GATHER_RES_MULTIQC.out.mqc.view{"MULTIQC GATHER: "+it}
+
+
+    GET_KMERS_VALS (MERFIN_HIST_EVALUATE_PRIMARY_ASSEMBLY.out.log).view{ "KMER MISSING VALUE: " + it }
+    
+
+    ch_multiqc_files = ch_multiqc_files.mix(GATHER_RES_MULTIQC.out.gs2_plot.collect())
+    ch_multiqc_files = ch_multiqc_files.mix(GATHER_RES_MULTIQC.out.merqry_spectra_cn.collect())
+    ch_multiqc_files = ch_multiqc_files.mix(GATHER_RES_MULTIQC.out.merqry_spectra_asm.collect())
+    ch_multiqc_files = ch_multiqc_files.mix(GATHER_RES_MULTIQC.out.general_stats.collect())
+    ch_multiqc_files = ch_multiqc_files.mix(GATHER_RES_MULTIQC.out.mqc.collect())
+    
+    GATHER_RES_MULTIQC.out.general_stats.view{ "GENERAL STATS: "+it }
+
+    MULTIQC (
+        ch_multiqc_files.collect(),
+        ch_multiqc_config.toList(),
+        ch_multiqc_custom_config.toList(),
+        ch_multiqc_logo.toList()
+    )
+    multiqc_report = MULTIQC.out.report.toList()
+    // ch_results.view{ "FINAL: "+it }
+
     
     
 
