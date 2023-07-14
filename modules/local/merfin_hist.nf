@@ -64,6 +64,7 @@ process MERFIN_HIST {
     // TODO nf-core: Please indent the command appropriately (4 spaces!!) to help with readability ;)
     """
     merfin -hist \\
+        $args \\
         -sequence $fasta_assembly \\
         -readmers $meryl_db_reads \\
         -peak $peak \\

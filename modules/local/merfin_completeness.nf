@@ -63,6 +63,7 @@ process MERFIN_COMPLETENESS {
     // TODO nf-core: Please indent the command appropriately (4 spaces!!) to help with readability ;)
     """
     merfin -completeness \\
+        $args \\
         -seqmers $meryl_db_assembly \\
         -readmers $meryl_db_reads \\
         -peak $peak \\

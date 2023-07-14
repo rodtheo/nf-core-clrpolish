@@ -64,6 +64,7 @@ process MERFIN_POLISH {
     // TODO nf-core: Please indent the command appropriately (4 spaces!!) to help with readability ;)
     """
     merfin -polish \\
+        $args \\
         -sequence $fasta_assembly \\
         -readmers $meryl_db_reads \\
         -peak $peak \\
