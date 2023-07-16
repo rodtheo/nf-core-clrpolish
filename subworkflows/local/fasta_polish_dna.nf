@@ -113,9 +113,6 @@ process GET_CHR_NAMES {
     """
 }
 
-params.n_chromosome = 2
-params.n_splits_per_chr = 2
-
 workflow FASTA_POLISH_DNA {
 
     take:
