@@ -260,7 +260,7 @@ workflow FASTA_POLISH_DNA {
 
     // ch_buffer_size = FREEBAYES_FASTAGENERATEREGIONS.out.bed.map{ it[1].size }
     
-    buffer_size = params.n_chromosome * params.n_splits_per_chr
+    buffer_size = params.n_chromosomes * params.n_splits_per_chr
     println "BUFFER SIZE: $buffer_size"
     ch_vcfs_list = out_vcfs.collate( buffer_size )
     ch_vcfs_list = ch_genome_meta.merge(ch_vcfs_list.map{ [it] })
