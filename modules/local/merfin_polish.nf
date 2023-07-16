@@ -70,8 +70,7 @@ process MERFIN_POLISH {
         -peak $peak \\
         -prob $lookup_table \\
         -vcf $vcf_in \\
-        -output ${prefix} \\
-        -threads 6
+        -output ${prefix}
         
         
 
