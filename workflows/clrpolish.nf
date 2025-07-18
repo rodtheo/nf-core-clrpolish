@@ -201,7 +201,7 @@ workflow CLRPOLISH {
     // Prepare genome channel to count kmers with meryl
     ch_genome_description = Channel.of(['id': 'genome', 'single_end': true])
     genome_ch = ch_genome_description.concat( genome_path_ch ).toList()
-    // genome_ch.view()
+    genome_ch.view()
 
     MERYL_COUNT_GENOME_01 (
         genome_ch

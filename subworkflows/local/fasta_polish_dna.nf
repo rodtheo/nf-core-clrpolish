@@ -32,14 +32,16 @@ include { BCFTOOLS_INDEX as BCFTOOLS_INDEX_BEFORE;
           BCFTOOLS_INDEX as BCFTOOLS_INDEX_POLISHED;
           BCFTOOLS_INDEX as BCFTOOLS_INDEX_CONCAT;
           BCFTOOLS_INDEX as BCFTOOLS_INDEX_NORM;
-          BCFTOOLS_INDEX as BCFTOOLS_INDEX_COMPRESS_NORM } from '../../modules/nf-core/bcftools/index/main'
+          BCFTOOLS_INDEX as BCFTOOLS_INDEX_COMPRESS_NORM;
+          BCFTOOLS_INDEX as BCFTOOLS_INDEX_FILTER } from '../../modules/nf-core/bcftools/index/main'
 include { MERFIN_POLISH } from '../../modules/local/merfin_polish'
 include { FREEBAYES_FASTAGENERATEREGIONS } from '../../modules/local/freebayes/fastagenerateregions'
 include { BCFTOOLS_CONCAT } from '../../modules/nf-core/bcftools/concat/main'
 include { VCFLIB_VCFUNIQ } from '../../modules/nf-core/vcflib/vcfuniq/main'
 include { BCFTOOLS_SORT } from '../../modules/nf-core/bcftools/sort/main'
 include { TABIX_BGZIP as TABIX_BGZIP_VCF_POLISHED;
-            TABIX_BGZIP as TABIX_BGZIP_VCF_NORM } from '../../modules/nf-core/tabix/bgzip/main'
+            TABIX_BGZIP as TABIX_BGZIP_VCF_NORM;
+            TABIX_BGZIP as TABIX_BGZIP_VCF_FILTER } from '../../modules/nf-core/tabix/bgzip/main'
 include { BCFTOOLS_CONSENSUS } from '../../modules/nf-core/bcftools/consensus/main'
 include { GET_COMPLETNESS_VAL } from '../../modules/local/merfin_get_qv_value'
 include { BCFTOOLS_NORM } from '../../modules/nf-core/bcftools/norm/main'
@@ -316,22 +318,41 @@ workflow FASTA_POLISH_DNA {
     uniqvcf_ch = BCFTOOLS_SORT.out.vcf.join(BCFTOOLS_INDEX_CONCAT.out.tbi)
     // uniqvcf_ch.view{ "UNIQ: " + it}
 
-    VCFLIB_VCFUNIQ (
-        uniqvcf_ch
+    // VCFLIB_VCFUNIQ (
+    //     uniqvcf_ch
+    // )
+
+    // VCFLIB_VCFUNIQ.out.vcf.view{ "VCFLIB VCFUNIQ: " + it}
+
+    //  BCFTOOLS_INDEX_FILTER (
+    //     VCFLIB_VCFUNIQ.out.vcf
+    // )
+
+    // VCFLIB_VCFUNIQ.out.vcf.join(BCFTOOLS_INDEX_FILTER.out.tbi).view{ "VCFLIB VCFUNIQ WITH INDEX: " + it}
+
+    // ch_freebayes_index_vcf = VCFLIB_VCFUNIQ.out.vcf.join(BCFTOOLS_INDEX_FILTER.out.tbi)
+
+    BCFTOOLS_VIEW_FILTER (
+        uniqvcf_ch,
+        [],
+        [],
+        [],
     )
 
     
     if (params.config_profile_name == 'Test profile') {
 
-        SUBSET_VCF (
-            VCFLIB_VCFUNIQ.out.vcf
-        )
+        // SUBSET_VCF (
+        //     VCFLIB_VCFUNIQ.out.vcf
+        // )
 
-        vcf_to_polish_ch = SUBSET_VCF.out.vcf_out
+        // vcf_to_polish_ch = SUBSET_VCF.out.vcf_out
         // vcf_to_polish_ch = VCFLIB_VCFUNIQ.out.vcf
+        vcf_to_polish_ch = BCFTOOLS_VIEW_FILTER.out.vcf
     } else {
-        vcf_to_polish_ch = VCFLIB_VCFUNIQ.out.vcf 
+        vcf_to_polish_ch = BCFTOOLS_VIEW_FILTER.out.vcf
     }
+
 
     MERFIN_POLISH (
             ch_genome,

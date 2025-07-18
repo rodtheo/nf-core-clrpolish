@@ -63,6 +63,8 @@ Now, you can run the pipeline using:
 
 <!-- TODO nf-core: update the following command to include all required parameters for a minimal example -->
 
+Data source: https://lomanlab.github.io/mockcommunity/
+
 ```bash
 nextflow run nf-core/clrpolish \
    -profile <docker/singularity/.../institute> \
