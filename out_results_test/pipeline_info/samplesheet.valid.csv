@@ -1,0 +1,2 @@
+sample,single_end,fastq_1,fastq_2
+SAMPLE1_PE_T1,False,./data/ERR2935851_1_sampled.fastq.gz,./data/ERR2935851_2_sampled.fastq.gz

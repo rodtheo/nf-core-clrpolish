@@ -45,6 +45,8 @@ include { TABIX_BGZIP as TABIX_BGZIP_VCF_POLISHED;
 include { BCFTOOLS_CONSENSUS } from '../../modules/nf-core/bcftools/consensus/main'
 include { GET_COMPLETNESS_VAL } from '../../modules/local/merfin_get_qv_value'
 include { BCFTOOLS_NORM } from '../../modules/nf-core/bcftools/norm/main'
+include { MINIPROT_ALIGN } from '../../modules/nf-core/miniprot/align/main'
+include { GET_FRAMESHIFTS } from '../../modules/local/frameshift_gff'
 
 process SUBSET_VCF {
     conda "bioconda::tabix=1.11"
@@ -147,6 +149,11 @@ workflow FASTA_POLISH_DNA {
     // ch_tuple_interation.view{ "ITERATION CH: " + it}
 
     ch_versions = Channel.empty()
+
+    // Create a value channel with meta information
+    ch_meta = Channel.of([id: 'genome', single_end: true])
+    ch_protein_faa = Channel.fromPath('./data/protein.faa')
+    ch_protein_faa_tuple = ch_meta.combine(ch_protein_faa)
 
     // TODO nf-core: substitute modules here for the modules of your subworkflow
     // ch_genome.view{ "CH_GENOME: "+it }
@@ -438,6 +445,18 @@ workflow FASTA_POLISH_DNA {
         ch_genome_polished
     )
 
+    // Run MINIPROT_ALIGN between MERYL_COUNT_GENOME and MERFIN_COMPLETENESS
+    MINIPROT_ALIGN(
+        ch_protein_faa_tuple,      // tuple val(meta), path(pep)
+        ch_genome_polished   // tuple val(meta2), path(ref)
+    )
+
+    ch_frameshifts_polished = GET_FRAMESHIFTS (
+        MINIPROT_ALIGN.out.gff
+    )
+
+    GET_FRAMESHIFTS.out.frameshifts.view { "FRAMESHIFTS: " + it }
+
     MERFIN_COMPLETENESS (
         MERYL_COUNT_GENOME.out.meryl_db,
         ch_read_meryl_db,
@@ -449,14 +468,14 @@ workflow FASTA_POLISH_DNA {
     ch_merfin_hist.view{ "MERFIN HIST: "+it }
     ch_qv_value_polished = GET_QV_VALUE (ch_merfin_hist).view{ "QV VALUE: " + it }
     ch_completness_polished = GET_COMPLETNESS_VAL(MERFIN_COMPLETENESS.out.completeness)
-
+    
     // ch_out_iteration = ch_iteration.map{ [[it[0] + 1]] }.merge(ch_reads.map{ [it] }).merge(ch_genome_polished.map{ [it] }).merge(ch_read_meryl_db.map{ [it] }).merge(ch_lookup_table.map{ [it] }).merge(ch_peak_val.first()).map{ [it] }
     ch_diff_qv_value = ch_qv_value_polished.toFloat().merge(ch_qv_value.toFloat()).map { it[0] - it[1] }.toFloat()
     
     
     
     // ch_out_iteration_ = ch_iteration.map{ [[it[0] + 1]] }.first().concat(ch_reads.map{ [it] }.first()).concat(ch_genome_polished.map{ [it] }.first()).concat(ch_read_meryl_db.map{ [it] }.first()).concat(ch_lookup_table.map{ [it] }.first()).concat(ch_peak_val.first()).buffer(size: 6)
-    ch_out_iteration_ = ch_iteration.map{ [[it[0] + 1]] }.merge(ch_reads.map{ [it] }, ch_genome_polished.map{ [it] }, ch_read_meryl_db.map{ [it] }, ch_lookup_table.map{ [it] }, ch_peak_val, ch_qv_value_polished, ch_diff_qv_value, ch_completness_polished)
+    ch_out_iteration_ = ch_iteration.map{ [[it[0] + 1]] }.merge(ch_reads.map{ [it] }, ch_genome_polished.map{ [it] }, ch_read_meryl_db.map{ [it] }, ch_lookup_table.map{ [it] }, ch_peak_val, ch_qv_value_polished, ch_diff_qv_value, ch_completness_polished, ch_frameshifts_polished)
     // ch_out_iteration_ = ch_out_iteration_.map{ [ it[0][0], it[1][0], it[2][0], it[3][0], it[4][0], it[5] ] }
 
     ch_out_iteration_.view { 'OUT INTERACTION: ' + it }

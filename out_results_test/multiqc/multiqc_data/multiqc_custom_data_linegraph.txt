@@ -1,0 +1,2 @@
+Sample	0	1
+genome	5.84	5.84

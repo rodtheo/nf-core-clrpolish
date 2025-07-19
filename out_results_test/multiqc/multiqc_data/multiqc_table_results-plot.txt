@@ -1,0 +1,3 @@
+Sample	QV*	K*	FASTA
+0.0	5.84	0.97681	genome
+1.0	5.84	0.97681	round_1_genome

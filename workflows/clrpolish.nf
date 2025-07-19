@@ -93,6 +93,8 @@ include { TABIX_BGZIP as TABIX_BGZIP_VCF_POLISHED } from '../modules/nf-core/tab
 include { BCFTOOLS_CONSENSUS } from '../modules/nf-core/bcftools/consensus/main'
 include { GATHER_RES_MULTIQC } from '../modules/local/gather_res_multiqc'
 include { MERYL_GREATER_THAN } from '../modules/local/meryl_greater'
+include { GET_FRAMESHIFTS as GET_FRAMESHIFTS_VAL } from '../modules/local/frameshift_gff'
+include { MINIPROT_ALIGN as MINIPROT_ALIGN_GENOME } from '../modules/nf-core/miniprot/align/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -456,10 +458,26 @@ workflow CLRPOLISH {
     // ch_read_meryl_db_,            // MERYL_COUNT_READS_01.out.meryl_db,
     // ch_lookup_table_,            // GENOMESCOPE2_PRE.out.lookup_table,
     // ch_peak_val_) =
+    
 
     ch_completness = GET_COMPLETNESS_VAL (MERFIN_COMPLETENESS.out.completeness).view{ "COMPLETENESS VALUE: " + it }
 
-    ch_out_iteration = ch_iteration.map{ [it] }.merge(ch_reads.map{ [it] }).merge(genome_ch_brackets.map{ [it] }).merge(ch_read_meryl_db.map{ [it] }).merge(ch_lookup_table.map{ [it] }).merge(peak_ch_val).merge(ch_qv_value).merge(Channel.of(1.0).toFloat()).merge(ch_completness)
+
+    // Create a value channel with meta information
+    ch_meta = Channel.of([id: 'genome', single_end: true])
+    ch_protein_faa = Channel.fromPath('./data/protein.faa')
+    ch_protein_faa_tuple = ch_meta.combine(ch_protein_faa)
+    
+
+    // Run MINIPROT_ALIGN between MERYL_COUNT_GENOME and MERFIN_COMPLETENESS
+    MINIPROT_ALIGN_GENOME (
+        ch_protein_faa_tuple,      // tuple val(meta), path(pep)
+        genome_ch   // tuple val(meta2), path(ref)
+    )
+
+    ch_frameshifts = GET_FRAMESHIFTS_VAL (MINIPROT_ALIGN_GENOME.out.gff)
+
+    ch_out_iteration = ch_iteration.map{ [it] }.merge(ch_reads.map{ [it] }).merge(genome_ch_brackets.map{ [it] }).merge(ch_read_meryl_db.map{ [it] }).merge(ch_lookup_table.map{ [it] }).merge(peak_ch_val).merge(ch_qv_value).merge(Channel.of(1.0).toFloat()).merge(ch_completness).merge(ch_frameshifts)
 
     ch_results = Channel.empty()
     ch_results = ch_results.mix(ch_out_iteration.map{ [it] })

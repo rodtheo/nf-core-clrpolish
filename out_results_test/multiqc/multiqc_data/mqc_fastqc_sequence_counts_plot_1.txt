@@ -1,0 +1,3 @@
+Sample	Unique Reads	Duplicate Reads
+SAMPLE1_PE_T1_1	99074.0	926.0
+SAMPLE1_PE_T1_2	99391.0	609.0

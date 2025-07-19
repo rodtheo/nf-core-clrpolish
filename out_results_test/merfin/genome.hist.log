@@ -1,0 +1,342 @@
+-- Loading probability table 'lookup_table.txt'.
+
+Copy-number: 1		ReadK: 0	Probability: 1.000000
+Copy-number: 2		ReadK: 0	Probability: 1.000000
+Copy-number: 3		ReadK: 0	Probability: 1.000000
+Copy-number: 4		ReadK: 0	Probability: 1.000000
+Copy-number: 5		ReadK: 0	Probability: 1.000000
+Copy-number: 6		ReadK: 0	Probability: 1.000000
+Copy-number: 7		ReadK: 0	Probability: 1.000000
+Copy-number: 8		ReadK: 0	Probability: 1.000000
+Copy-number: 9		ReadK: 0	Probability: 1.000000
+Copy-number: 10		ReadK: 0	Probability: 0.999999
+Copy-number: 11		ReadK: 0	Probability: 0.999994
+Copy-number: 12		ReadK: 0	Probability: 0.999962
+Copy-number: 13		ReadK: 0	Probability: 0.999827
+Copy-number: 14		ReadK: 0	Probability: 0.999255
+Copy-number: 15		ReadK: 0	Probability: 0.997372
+Copy-number: 16		ReadK: 0	Probability: 0.989350
+Copy-number: 17		ReadK: 0	Probability: 0.986280
+Copy-number: 18		ReadK: 0	Probability: 0.973874
+Copy-number: 19		ReadK: 0	Probability: 0.921133
+Copy-number: 20		ReadK: 0	Probability: 0.863785
+Copy-number: 21		ReadK: 0	Probability: 0.786987
+Copy-number: 22		ReadK: 0	Probability: 0.751531
+Copy-number: 23		ReadK: 0	Probability: 0.526594
+Copy-number: 24		ReadK: 0	Probability: 0.595737
+Copy-number: 25		ReadK: 1	Probability: 0.728798
+Copy-number: 26		ReadK: 1	Probability: 0.762427
+Copy-number: 27		ReadK: 1	Probability: 0.747101
+Copy-number: 28		ReadK: 1	Probability: 0.891445
+Copy-number: 29		ReadK: 1	Probability: 0.903552
+Copy-number: 30		ReadK: 1	Probability: 1.000000
+Copy-number: 31		ReadK: 1	Probability: 1.000000
+Copy-number: 32		ReadK: 1	Probability: 1.000000
+Copy-number: 33		ReadK: 1	Probability: 1.000000
+Copy-number: 34		ReadK: 1	Probability: 1.000000
+Copy-number: 35		ReadK: 1	Probability: 1.000000
+Copy-number: 36		ReadK: 1	Probability: 1.000000
+Copy-number: 37		ReadK: 1	Probability: 1.000000
+Copy-number: 38		ReadK: 1	Probability: 0.999999
+Copy-number: 39		ReadK: 1	Probability: 0.999999
+Copy-number: 40		ReadK: 1	Probability: 0.999998
+Copy-number: 41		ReadK: 1	Probability: 0.999996
+Copy-number: 42		ReadK: 1	Probability: 0.999992
+Copy-number: 43		ReadK: 1	Probability: 0.999984
+Copy-number: 44		ReadK: 1	Probability: 0.999969
+Copy-number: 45		ReadK: 1	Probability: 0.999940
+Copy-number: 46		ReadK: 1	Probability: 0.999883
+Copy-number: 47		ReadK: 1	Probability: 0.999772
+Copy-number: 48		ReadK: 1	Probability: 0.999558
+Copy-number: 49		ReadK: 1	Probability: 0.999142
+Copy-number: 50		ReadK: 1	Probability: 0.998335
+Copy-number: 51		ReadK: 1	Probability: 0.996777
+Copy-number: 52		ReadK: 1	Probability: 0.993771
+Copy-number: 53		ReadK: 1	Probability: 0.988003
+Copy-number: 54		ReadK: 1	Probability: 0.977030
+Copy-number: 55		ReadK: 1	Probability: 0.956486
+Copy-number: 56		ReadK: 1	Probability: 0.854663
+Copy-number: 57		ReadK: 1	Probability: 0.752732
+Copy-number: 58		ReadK: 2	Probability: 0.550303
+Copy-number: 59		ReadK: 2	Probability: 0.819767
+Copy-number: 60		ReadK: 2	Probability: 0.897556
+Copy-number: 61		ReadK: 2	Probability: 0.970109
+Copy-number: 62		ReadK: 2	Probability: 0.984230
+Copy-number: 63		ReadK: 2	Probability: 0.991731
+Copy-number: 64		ReadK: 2	Probability: 0.997742
+Copy-number: 65		ReadK: 2	Probability: 0.999381
+Copy-number: 66		ReadK: 2	Probability: 0.999673
+Copy-number: 67		ReadK: 2	Probability: 0.999898
+Copy-number: 68		ReadK: 2	Probability: 0.999932
+Copy-number: 69		ReadK: 2	Probability: 0.999944
+Copy-number: 70		ReadK: 2	Probability: 0.999923
+Copy-number: 71		ReadK: 2	Probability: 0.999892
+Copy-number: 72		ReadK: 2	Probability: 0.999844
+Copy-number: 73		ReadK: 2	Probability: 0.999772
+Copy-number: 74		ReadK: 2	Probability: 0.999664
+Copy-number: 75		ReadK: 2	Probability: 0.999506
+Copy-number: 76		ReadK: 2	Probability: 0.999271
+Copy-number: 77		ReadK: 2	Probability: 0.998417
+Copy-number: 78		ReadK: 2	Probability: 0.996568
+Copy-number: 79		ReadK: 2	Probability: 0.992582
+Copy-number: 80		ReadK: 0	Probability: 0.000000
+Copy-number: 81		ReadK: 0	Probability: 0.000000
+Copy-number: 82		ReadK: 0	Probability: 0.000000
+Copy-number: 83		ReadK: 0	Probability: 0.000000
+Copy-number: 84		ReadK: 0	Probability: 0.000000
+Copy-number: 85		ReadK: 0	Probability: 0.000000
+Copy-number: 86		ReadK: 0	Probability: 0.000000
+Copy-number: 87		ReadK: 0	Probability: 0.000000
+Copy-number: 88		ReadK: 0	Probability: 0.000000
+Copy-number: 89		ReadK: 0	Probability: 0.000000
+Copy-number: 90		ReadK: 0	Probability: 0.000000
+Copy-number: 91		ReadK: 0	Probability: 0.000000
+Copy-number: 92		ReadK: 0	Probability: 0.000000
+Copy-number: 93		ReadK: 0	Probability: 0.000000
+Copy-number: 94		ReadK: 0	Probability: 0.000000
+Copy-number: 95		ReadK: 0	Probability: 0.000000
+Copy-number: 96		ReadK: 0	Probability: 0.000000
+Copy-number: 97		ReadK: 0	Probability: 0.000000
+Copy-number: 98		ReadK: 0	Probability: 0.000000
+Copy-number: 99		ReadK: 0	Probability: 0.000000
+Copy-number: 100		ReadK: 0	Probability: 0.000000
+Copy-number: 101		ReadK: 0	Probability: 0.000000
+Copy-number: 102		ReadK: 0	Probability: 0.000000
+Copy-number: 103		ReadK: 0	Probability: 0.000000
+Copy-number: 104		ReadK: 0	Probability: 0.000000
+Copy-number: 105		ReadK: 0	Probability: 0.000000
+Copy-number: 106		ReadK: 0	Probability: 0.000000
+Copy-number: 107		ReadK: 0	Probability: 0.000000
+Copy-number: 108		ReadK: 0	Probability: 0.000000
+Copy-number: 109		ReadK: 0	Probability: 0.000000
+Copy-number: 110		ReadK: 0	Probability: 0.000000
+Copy-number: 111		ReadK: 0	Probability: 0.000000
+Copy-number: 112		ReadK: 0	Probability: 0.000000
+Copy-number: 113		ReadK: 0	Probability: 0.000000
+Copy-number: 114		ReadK: 0	Probability: 0.000000
+Copy-number: 115		ReadK: 0	Probability: 0.000000
+Copy-number: 116		ReadK: 0	Probability: 0.000000
+Copy-number: 117		ReadK: 0	Probability: 0.000000
+Copy-number: 118		ReadK: 0	Probability: 0.000000
+Copy-number: 119		ReadK: 0	Probability: 0.000000
+Copy-number: 120		ReadK: 0	Probability: 0.000000
+Copy-number: 121		ReadK: 0	Probability: 0.000000
+Copy-number: 122		ReadK: 0	Probability: 0.000000
+Copy-number: 123		ReadK: 0	Probability: 0.000000
+Copy-number: 124		ReadK: 0	Probability: 0.000000
+Copy-number: 125		ReadK: 0	Probability: 0.000000
+Copy-number: 126		ReadK: 0	Probability: 0.000000
+Copy-number: 127		ReadK: 0	Probability: 0.000000
+Copy-number: 128		ReadK: 0	Probability: 0.000000
+Copy-number: 129		ReadK: 0	Probability: 0.000000
+Copy-number: 130		ReadK: 0	Probability: 0.000000
+Copy-number: 131		ReadK: 0	Probability: 0.000000
+Copy-number: 132		ReadK: 0	Probability: 0.000000
+Copy-number: 133		ReadK: 0	Probability: 0.000000
+Copy-number: 134		ReadK: 0	Probability: 0.000000
+Copy-number: 135		ReadK: 0	Probability: 0.000000
+Copy-number: 136		ReadK: 0	Probability: 0.000000
+Copy-number: 137		ReadK: 0	Probability: 0.000000
+Copy-number: 138		ReadK: 0	Probability: 0.000000
+Copy-number: 139		ReadK: 0	Probability: 0.000000
+Copy-number: 140		ReadK: 0	Probability: 0.000000
+Copy-number: 141		ReadK: 0	Probability: 0.000000
+Copy-number: 142		ReadK: 0	Probability: 0.000000
+Copy-number: 143		ReadK: 0	Probability: 0.000000
+Copy-number: 144		ReadK: 0	Probability: 0.000000
+Copy-number: 145		ReadK: 0	Probability: 0.000000
+Copy-number: 146		ReadK: 0	Probability: 0.000000
+Copy-number: 147		ReadK: 0	Probability: 0.000000
+Copy-number: 148		ReadK: 0	Probability: 0.000000
+Copy-number: 149		ReadK: 0	Probability: 0.000000
+Copy-number: 150		ReadK: 0	Probability: 0.000000
+Copy-number: 151		ReadK: 0	Probability: 0.000000
+Copy-number: 152		ReadK: 0	Probability: 0.000000
+Copy-number: 153		ReadK: 0	Probability: 0.000000
+Copy-number: 154		ReadK: 0	Probability: 0.000000
+Copy-number: 155		ReadK: 0	Probability: 0.000000
+Copy-number: 156		ReadK: 0	Probability: 0.000000
+Copy-number: 157		ReadK: 0	Probability: 0.000000
+Copy-number: 158		ReadK: 0	Probability: 0.000000
+Copy-number: 159		ReadK: 0	Probability: 0.000000
+Copy-number: 160		ReadK: 0	Probability: 0.000000
+Copy-number: 161		ReadK: 0	Probability: 0.000000
+Copy-number: 162		ReadK: 0	Probability: 0.000000
+Copy-number: 163		ReadK: 0	Probability: 0.000000
+Copy-number: 164		ReadK: 0	Probability: 0.000000
+Copy-number: 165		ReadK: 0	Probability: 0.000000
+Copy-number: 166		ReadK: 0	Probability: 0.000000
+Copy-number: 167		ReadK: 0	Probability: 0.000000
+Copy-number: 168		ReadK: 0	Probability: 0.000000
+Copy-number: 169		ReadK: 0	Probability: 0.000000
+Copy-number: 170		ReadK: 0	Probability: 0.000000
+Copy-number: 171		ReadK: 0	Probability: 0.000000
+Copy-number: 172		ReadK: 0	Probability: 0.000000
+Copy-number: 173		ReadK: 0	Probability: 0.000000
+Copy-number: 174		ReadK: 0	Probability: 0.000000
+Copy-number: 175		ReadK: 0	Probability: 0.000000
+Copy-number: 176		ReadK: 0	Probability: 0.000000
+Copy-number: 177		ReadK: 0	Probability: 0.000000
+Copy-number: 178		ReadK: 0	Probability: 0.000000
+Copy-number: 179		ReadK: 0	Probability: 0.000000
+Copy-number: 180		ReadK: 0	Probability: 0.000000
+Copy-number: 181		ReadK: 0	Probability: 0.000000
+Copy-number: 182		ReadK: 0	Probability: 0.000000
+Copy-number: 183		ReadK: 0	Probability: 0.000000
+Copy-number: 184		ReadK: 0	Probability: 0.000000
+-- No -seqmer given. Build sequence db as 'bsubtilis_pb.fasta.meryl'.
+meryl threads=12 count k=21 memory=31.177 bsubtilis_pb.fasta output bsubtilis_pb.fasta.meryl
+
+
+Found 1 command tree.
+
+Counting 4061 (estimated) thousand canonical 21-mers from 1 input file:
+    sequence-file: bsubtilis_pb.fasta
+
+
+SIMPLE MODE
+-----------
+
+  21-mers
+    -> 4398046511104 entries for counts up to 65535.
+    -> 64 Tbits memory used
+
+  4159113 input bases
+    -> expected max count of 16636, needing 0 extra bits.
+    -> no memory used
+
+  8192 GB memory needed
+
+
+COMPLEX MODE
+------------
+
+prefix     # of   struct   kmers/    segs/      min     data    total
+  bits   prefix   memory   prefix   prefix   memory   memory   memory
+------  -------  -------  -------  -------  -------  -------  -------
+     1     2  P    26 kB  1015 kM  1302  S  8192  B    10 MB    10 MB
+     2     4  P    32 kB   507 kM   635  S    16 kB     9 MB     9 MB
+     3     8  P    44 kB   253 kM   310  S    32 kB  9920 kB  9964 kB
+     4    16  P    69 kB   126 kM   151  S    64 kB  9664 kB  9733 kB
+     5    32  P   119 kB    63 kM    74  S   128 kB  9472 kB  9591 kB
+     6    64  P   220 kB    31 kM    36  S   256 kB  9216 kB  9436 kB
+     7   128  P   422 kB    15 kM    18  S   512 kB  9216 kB  9638 kB
+     8   256  P   826 kB  8124  M     9  S  1024 kB  9216 kB     9 MB
+     9   512  P  1636 kB  4062  M     5  S  2048 kB    10 MB    11 MB
+    10  1024  P  3248 kB  2031  M     2  S  4096 kB  8192 kB    11 MB  Best Value!
+    11  2048  P  6480 kB  1016  M     1  S  8192 kB  8192 kB    14 MB
+    12  4096  P    12 MB   508  M     1  S    16 MB    16 MB    28 MB
+    13  8192  P    25 MB   254  M     1  S    32 MB    32 MB    57 MB
+    14    16 kP    50 MB   127  M     1  S    64 MB    64 MB   114 MB
+    15    32 kP   101 MB    64  M     1  S   128 MB   128 MB   229 MB
+    16    64 kP   202 MB    32  M     1  S   256 MB   256 MB   458 MB
+
+
+FINAL CONFIGURATION
+-------------------
+
+Estimated to require 19 MB memory out of 31 GB allowed.
+Estimated to require 2 batches.
+
+Configured complex mode for 0.019 GB memory per batch, and up to 2 batches.
+
+Start counting with THREADED method.
+Used 0.270 GB / 31.083 GB to store      2097130 kmers; need 0.008 GB to sort        43109 kmers
+
+Input complete.  Writing results to 'bsubtilis_pb.fasta.meryl', using 12 threads.
+finishIteration()--
+
+Finished counting.
+
+Cleaning up.
+
+Bye.
+
+-- Opening sequences in 'bsubtilis_pb.fasta'.
+-- Estimating required space for loading 'SAMPLE1_PE_T1.gt1.meryl'
+
+ p       prefixes             bits gigabytes (allowed: 31 GB)
+-- -------------- ---------------- ---------
+12           4096        141138513     0.016
+13           8192        137964648     0.016
+14          16384        135052927     0.016
+15          32768        132665494     0.015
+16          65536        131326637     0.015 (smallest)
+17         131072        132084932     0.015
+18         262144        137037531     0.016
+19         524288        150378738     0.018 (faster)
+20        1048576        180497161     0.021
+21        2097152        244170016     0.028
+22        4194304        374951735     0.044
+23        8388608        639951182     0.075
+-- -------------- ---------------- ---------
+          3436009 total kmers
+
+-- Estimating required space for loading 'bsubtilis_pb.fasta.meryl'
+
+ p       prefixes             bits gigabytes (allowed: 31 GB)
+-- -------------- ---------------- ---------
+12           4096        143595820     0.017
+13           8192        139876473     0.016
+14          16384        136419270     0.016
+15          32768        133486355     0.016
+16          65536        131602016     0.015 (smallest)
+17         131072        131814829     0.015
+18         262144        136221946     0.016
+19         524288        149017671     0.017 (faster)
+20        1048576        178590612     0.021
+21        2097152        241717985     0.028
+22        4194304        371954222     0.043
+23        8388608        636408187     0.074
+-- -------------- ---------------- ---------
+          3981491 total kmers
+
+--
+-- Minimal memory needed: 0.031 GB
+-- Optimal memory needed: 0.035 GB  enabled
+-- Memory limit           31.177 GB
+--
+-- Loading kmers from 'SAMPLE1_PE_T1.gt1.meryl' into lookup table.
+
+For 3436009 distinct 21-mers (with 19 bits used for indexing and 23 bits for tags):
+    0.004 GB memory for kmer indices -       524288 elements 64 bits wide)
+    0.009 GB memory for kmer tags    -      3436009 elements 23 bits wide)
+    0.004 GB memory for kmer values  -      3436009 elements 11 bits wide)
+    0.018 GB memory
+
+Will load 3436009 kmers.  Skipping 0 (too low) and 0 (too high) kmers.
+Allocating space for 3452137 suffixes of 23 bits each -> 79399151 bits (0.009 GB) in blocks of 32.000 MB
+                     3452137 values   of 11 bits each -> 37973507 bits (0.004 GB) in blocks of 32.000 MB
+Loaded 3436009 kmers.  Skipped 0 (too low) and 0 (too high) kmers.
+-- Loading kmers from 'bsubtilis_pb.fasta.meryl' into lookup table.
+
+For 3981491 distinct 21-mers (with 19 bits used for indexing and 23 bits for tags):
+    0.004 GB memory for kmer indices -       524288 elements 64 bits wide)
+    0.011 GB memory for kmer tags    -      3981491 elements 23 bits wide)
+    0.003 GB memory for kmer values  -      3981491 elements  6 bits wide)
+    0.017 GB memory
+
+Will load 3981491 kmers.  Skipping 0 (too low) and 0 (too high) kmers.
+Allocating space for 3997619 suffixes of 23 bits each -> 91945237 bits (0.011 GB) in blocks of 32.000 MB
+                     3997619 values   of 6 bits each -> 23985714 bits (0.003 GB) in blocks of 32.000 MB
+Loaded 3981491 kmers.  Skipped 0 (too low) and 0 (too high) kmers.
+-- Generate histogram of the k* metric to 'genome.hist'.
+Processing sequence bsubtilis1 for histogram
+Processing sequence bsubtilis2 for histogram
+Output sequence bsubtilis2
+bsubtilis2	25678	25678	25678	-0.00
+Output sequence bsubtilis1
+bsubtilis1	4005827	4031505	4065141	7.39
+
+K-mers not found in reads (missing) : 4031505
+K-mers overly represented in assembly: 52138.78
+K-mers found in the assembly: 4090819
+Missing QV: 7.39
+Merfin QV*: 5.84
+*** Note this QV is valid only if -seqmer was generated with -sequence ***
+
+*** Missing QV only considers missing kmers as errors. Merfin QV* includes overrepresented kmers. ***
+
+*** When the lookup table is provided, missing QV includes weighted low frequency kmers, otherwise it is identical to Merqury QV. ***
+
+Bye!
