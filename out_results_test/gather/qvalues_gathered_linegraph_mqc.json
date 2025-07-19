@@ -1,1 +1,0 @@
-{"id": "custom_data_lineplot", "section_name": "Polishing Results", "description": "Graphed are the consensus quality (QV*) obtained after running merfin -hist (yaxis).", "plot_type": "linegraph", "pconfig": {"id": "custom_data_linegraph", "title": "Polishing Rounds Evaluation", "ylab": "Consensus quality (QV*)", "xDecimals": false}, "data": {"genome": {"0": 5.84, "1": 5.84}}}
