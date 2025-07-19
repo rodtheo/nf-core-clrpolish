@@ -8,3 +8,5 @@ testing*
 *.pyc
 meus_resultados*/
 null/
+.vscode/
+out_*
