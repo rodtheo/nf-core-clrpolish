@@ -150,10 +150,6 @@ workflow FASTA_POLISH_DNA {
 
     ch_versions = Channel.empty()
 
-    // Create a value channel with meta information
-    ch_meta = Channel.of([id: 'genome', single_end: true])
-    ch_protein_faa = Channel.fromPath('./data/protein.faa')
-    ch_protein_faa_tuple = ch_meta.combine(ch_protein_faa)
 
     // TODO nf-core: substitute modules here for the modules of your subworkflow
     // ch_genome.view{ "CH_GENOME: "+it }
@@ -161,7 +157,7 @@ workflow FASTA_POLISH_DNA {
         ch_genome
     )
 
-    ch_genome.view{ "BWA MEM EXECUTADO AQUI: "+it }
+    // ch_genome.view{ "BWA MEM EXECUTADO AQUI: "+it }
     
     BWA_MEM (
         ch_reads,
@@ -233,7 +229,7 @@ workflow FASTA_POLISH_DNA {
                                  it[3], it[4], [], [], it[5], it[1], it[2]] }
     freebayes_input_lists_ok.first().view{ "LISTS: " + it }
     // freebayes_input_lists_ok.count().view()
-    ch_genome.view{ "=== ESSE EH O GENOMA: "+it }  
+    // ch_genome.view{ "=== ESSE EH O GENOMA: "+it }  
     genome_ch_fai_file.collate(3, false).view{ "=== ESSE EH O GENOMA (FAI): "+it }
 
 
@@ -387,14 +383,14 @@ workflow FASTA_POLISH_DNA {
 
     ch_vcf_norm = TABIX_BGZIP_VCF_POLISHED.out.output.join(BCFTOOLS_INDEX_POLISHED.out.tbi)
     
-    ch_vcf_norm.view{"VCF NORM: "+it}
+    // ch_vcf_norm.view{"VCF NORM: "+it}
 
     BCFTOOLS_NORM (
         ch_vcf_norm,
         ch_genome
     )
 
-    BCFTOOLS_NORM.out.vcf.view{"UUUUUUULA LA: "+it}
+    // BCFTOOLS_NORM.out.vcf.view{"UUUUUUULA LA: "+it}
 
      BCFTOOLS_INDEX_NORM (
         BCFTOOLS_NORM.out.vcf
@@ -420,8 +416,8 @@ workflow FASTA_POLISH_DNA {
     
     // consensus_fasta_ch = ch_n.combine(consensus_fasta_ch)
     consensus_fasta_ch = ch_n.merge(consensus_fasta_ch)
-    consensus_fasta_ch.view { "CONSENSUS B: " + it }
-    consensus_fasta_ch.filter{ it[0] }.view { "CONSENSUS B: " + it }
+    // consensus_fasta_ch.view { "CONSENSUS B: " + it }
+    // consensus_fasta_ch.filter{ it[0] }.view { "CONSENSUS B: " + it }
     consensus_fasta_ch = consensus_fasta_ch.map{[ ['id': it[0]['id']+'_'+it[1]['id'], 'single_end': true], it[2], it[3], it[4] ]}
     // consensus_fasta_ch.view { "CONSENSUS C: " + it }
 
@@ -430,6 +426,7 @@ workflow FASTA_POLISH_DNA {
     )
     
     ch_genome_polished = BCFTOOLS_CONSENSUS.out.fasta
+    ch_genome_polished.view { "GENOME POLISHED: " + it }
 
 
     MERFIN_HIST_EVALUATE_POLISH (
@@ -444,6 +441,14 @@ workflow FASTA_POLISH_DNA {
     MERYL_COUNT_GENOME (
         ch_genome_polished
     )
+
+    // Create a value channel with meta information
+    
+    ch_protein_faa = Channel.fromPath('./data/protein.faa')
+    ch_protein_faa_tuple = ch_genome_polished.map{ it[0] }.combine(ch_protein_faa)
+
+    ch_genome_polished.dump(tag: 'ch_genome_polished')
+    ch_protein_faa_tuple.dump(tag: 'ch_protein_faa_tuple')
 
     // Run MINIPROT_ALIGN between MERYL_COUNT_GENOME and MERFIN_COMPLETENESS
     MINIPROT_ALIGN(
@@ -465,7 +470,7 @@ workflow FASTA_POLISH_DNA {
     )
 
     ch_merfin_hist = MERFIN_HIST_EVALUATE_POLISH.out.log
-    ch_merfin_hist.view{ "MERFIN HIST: "+it }
+    // ch_merfin_hist.view{ "MERFIN HIST: "+it }
     ch_qv_value_polished = GET_QV_VALUE (ch_merfin_hist).view{ "QV VALUE: " + it }
     ch_completness_polished = GET_COMPLETNESS_VAL(MERFIN_COMPLETENESS.out.completeness)
     
@@ -475,7 +480,7 @@ workflow FASTA_POLISH_DNA {
     
     
     // ch_out_iteration_ = ch_iteration.map{ [[it[0] + 1]] }.first().concat(ch_reads.map{ [it] }.first()).concat(ch_genome_polished.map{ [it] }.first()).concat(ch_read_meryl_db.map{ [it] }.first()).concat(ch_lookup_table.map{ [it] }.first()).concat(ch_peak_val.first()).buffer(size: 6)
-    ch_out_iteration_ = ch_iteration.map{ [[it[0] + 1]] }.merge(ch_reads.map{ [it] }, ch_genome_polished.map{ [it] }, ch_read_meryl_db.map{ [it] }, ch_lookup_table.map{ [it] }, ch_peak_val, ch_qv_value_polished, ch_diff_qv_value, ch_completness_polished, ch_frameshifts_polished)
+    ch_out_iteration_ = ch_iteration.map{ [[it[0] + 1]] }.merge(ch_reads.map{ [it] }, ch_genome_polished.map{ [it] }, ch_read_meryl_db.map{ [it] }, ch_lookup_table.map{ [it] }, ch_peak_val, ch_qv_value_polished, ch_diff_qv_value, ch_completness_polished)
     // ch_out_iteration_ = ch_out_iteration_.map{ [ it[0][0], it[1][0], it[2][0], it[3][0], it[4][0], it[5] ] }
 
     ch_out_iteration_.view { 'OUT INTERACTION: ' + it }
