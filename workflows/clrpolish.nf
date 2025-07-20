@@ -477,7 +477,7 @@ workflow CLRPOLISH {
 
     ch_frameshifts = GET_FRAMESHIFTS_VAL (MINIPROT_ALIGN_GENOME.out.gff)
 
-    ch_out_iteration = ch_iteration.map{ [it] }.merge(ch_reads.map{ [it] }).merge(genome_ch_brackets.map{ [it] }).merge(ch_read_meryl_db.map{ [it] }).merge(ch_lookup_table.map{ [it] }).merge(peak_ch_val).merge(ch_qv_value).merge(Channel.of(1.0).toFloat()).merge(ch_completness).merge(ch_frameshifts)
+    ch_out_iteration = ch_iteration.map{ [it] }.merge(ch_reads.map{ [it] }).merge(genome_ch_brackets.map{ [it] }).merge(ch_read_meryl_db.map{ [it] }).merge(ch_lookup_table.map{ [it] }).merge(peak_ch_val).merge(ch_qv_value).merge(Channel.of(1.0).toFloat()).merge(ch_completness)
 
     ch_results = Channel.empty()
     ch_results = ch_results.mix(ch_out_iteration.map{ [it] })
