@@ -35,6 +35,7 @@ include { BCFTOOLS_INDEX as BCFTOOLS_INDEX_BEFORE;
           BCFTOOLS_INDEX as BCFTOOLS_INDEX_COMPRESS_NORM;
           BCFTOOLS_INDEX as BCFTOOLS_INDEX_FILTER } from '../../modules/nf-core/bcftools/index/main'
 include { MERFIN_POLISH } from '../../modules/local/merfin_polish'
+include { MERFIN_FILTER } from '../../modules/local/merfin_filter'
 include { FREEBAYES_FASTAGENERATEREGIONS } from '../../modules/local/freebayes/fastagenerateregions'
 include { BCFTOOLS_CONCAT } from '../../modules/nf-core/bcftools/concat/main'
 include { VCFLIB_VCFUNIQ } from '../../modules/nf-core/vcflib/vcfuniq/main'
@@ -356,13 +357,18 @@ workflow FASTA_POLISH_DNA {
         vcf_to_polish_ch = BCFTOOLS_VIEW_FILTER.out.vcf
     }
 
+    MERFIN_FILTER (
+            ch_genome,
+            ch_read_meryl_db,
+            vcf_to_polish_ch
+        )
 
     MERFIN_POLISH (
             ch_genome,
             ch_read_meryl_db,
             ch_lookup_table,
             ch_peak_val,
-            vcf_to_polish_ch
+            MERFIN_FILTER.out.vcf
         )
 
     TABIX_BGZIP_VCF_POLISHED (
