@@ -65,6 +65,8 @@ Now, you can run the pipeline using:
 
 Data source: https://lomanlab.github.io/mockcommunity/
 
+https://agdatacommons.nal.usda.gov/articles/dataset/Data_from_polishCLR_Example_input_genome_assemblies/24667776?file=44530865
+
 ```bash
 nextflow run nf-core/clrpolish \
    -profile <docker/singularity/.../institute> \
